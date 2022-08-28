@@ -8,7 +8,7 @@ All the methods of MicroPython FrameBuffer in the [framebuf](https://docs.microp
 
 ## Interfaces
 
-The code includes an I2C interface. The SPI interface is broken.
+The code includes an I2C interface. An SPI interface is also included but this is broken at present.
 
 ## Requirements
 
