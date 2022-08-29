@@ -1,7 +1,7 @@
 #
 # MicroPython SH1107 OLED driver, I2C interfaces
 # tested with Raspberry Pi Pico and adafruit 1.12 inch QWIC OLED display
-# sh1107 driver v203
+# sh1107 driver v205
 #
 # The MIT License (MIT)
 #
@@ -63,8 +63,14 @@
 from micropython import const
 import time #as time
 # line below is in preparation for possible framebuffer extensions
-import framebuf2 as framebuf
+try:
+    import framebuf2 as framebuf
+    _fb_variant = 2
+except:
+    import framebuf
+    _fb_variant = 1
 # import framebuf
+# print('framebuf is ', ('standard' if _fb_variant ==1 else 'extended') )
 
 import gc
 
@@ -88,10 +94,10 @@ class SH1107(framebuf.FrameBuffer):
     white = const(1)
     black = const(0)
 #     MONO_HMSB=super().MONO_HMSB
-    print('SH1107 ',dir(framebuf))
+#     print('SH1107 ',dir(framebuf))
 
     def __init__(self, width, height, external_vcc, rotate=0):
-        print('__init display__ start: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
+#         print('__init display__ start: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
         self.width = width
         self.height = height
         self.external_vcc = external_vcc
@@ -100,16 +106,16 @@ class SH1107(framebuf.FrameBuffer):
         self.pages = self.height // 8
         self.row_width = self.width //8
         self.bufsize = self.pages * self.width
-#        print('pre-buffer: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
+#         print('pre-buffer: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
         self.renderbuf = bytearray(self.bufsize)
-#        print('pre MV: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
-#        self.renderbuf_mv = memoryview(self.renderbuf)
-#        print('MV done: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
+#         print('pre MV: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
+#         self.renderbuf_mv = memoryview(self.renderbuf)
+#         print('MV done: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
 #         self.pagebuf = bytearray(self.width)
         self.pages_to_update = 0
-#        print('initialising SH1107 class',self.height,self.width,self.pages,self.bufsize)
+#         print('initialising SH1107 class',self.height,self.width,self.pages,self.bufsize)
 
-#        print('pre super call: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
+#         print('pre super call: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
         if self.rotate90:
 #             self.displaybuf = bytearray(self.bufsize)
             # HMSB is required to keep the bit order in the render buffer
@@ -125,13 +131,7 @@ class SH1107(framebuf.FrameBuffer):
             super().__init__(self.renderbuf, self.width, self.height,
                              framebuf.MONO_VLSB)
 #                              super().MONO_VLSB)
-        
 
-        #self.white =   0xffff
-        #self.black =   0x0000
-
-        # flip() was called rotate() once, provide backwards compatibility.
-        self.rotate = self.flip
         self.init_display()
         
 #         for name in self.__dict__:
@@ -250,7 +250,7 @@ class SH1107(framebuf.FrameBuffer):
             
         self.pages_to_update = 0
         
-        print('screen update used ', (time.ticks_us()- _start)/1000,'ms')
+#         print('screen update used ', (time.ticks_us()- _start)/1000,'ms')
 #         print('free memory' , gc.mem_free())
 
     def pixel(self, x, y, c=None):
@@ -264,12 +264,13 @@ class SH1107(framebuf.FrameBuffer):
     def text(self, text, x, y, c=1):
         super().text(text, x, y, c)
         self.register_updates(y, y+7)
-    
-    def large_text(self, s, x, y, m, c=1):
-#         print('before text call', y, y+(8*m)-1)
-        super().large_text(s, x, y, m, c)
-#         print('after text call', y, y+(8*m)-1)
-        self.register_updates(y, y+(8*m)-1)
+
+    if _fb_variant == 2:
+        def large_text(self, s, x, y, m, c=1):
+    #         print('before text call', y, y+(8*m)-1)
+            super().large_text(s, x, y, m, c)
+    #         print('after text call', y, y+(8*m)-1)
+            self.register_updates(y, y+(8*m)-1)
 
     def line(self, x0, y0, x1, y1, c):
         super().line(x0, y0, x1, y1, c)
