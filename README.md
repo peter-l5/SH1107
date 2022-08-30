@@ -1,4 +1,4 @@
-# MicroPython SH1107 display driver
+# MicroPython SH1107 display driver - with large fonts
 
 This module provides a MicroPython driver for the SH1107 display controller. It is mainly based on the [SH1106 driver](https://github.com/robert-hh/SH1106) made by @robert-hh and others. It includes some extensions and improvements including a link to the `large_text` method in the MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/framebuf2). 
 
