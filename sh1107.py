@@ -1,7 +1,7 @@
 #
 # MicroPython SH1107 OLED driver, I2C interfaces
 # tested with Raspberry Pi Pico and adafruit 1.12 inch QWIC OLED display
-# sh1107 driver v205
+# sh1107 driver v210
 #
 # The MIT License (MIT)
 #
@@ -28,21 +28,36 @@
 # OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 # THE SOFTWARE.
 #
-# SPI Interface is in this module BROKEN
+#
 # Sample code sections for RaspberryPi Pico pin assignments
 # ------------ SPI ------------------
-# SPI interface is broken
+# Pin Map SPI
+#   - 3v3 - xxxxxx   - Vcc
+#   - G   - xxxxxx   - Gnd
+#   - D7  - GPIO 15  - TX / MOSI fixed
+#   - D5  - GPIO 14  - SCK / Sck fixed
+#   - D8  - GPIO 13  - CS (optional, if the only connected device)
+#   - D2  - GPIO 21  - DC [Data/Command]
+#   - D1  - GPIO 20  - Res [reset]
+#
+# spi1 = SPI(1, baudrate=10_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
+# display = sh1107.SH1107_SPI(128, 128, spi1, Pin(21), Pin(20), Pin(13))
+# display.sleep(False)
+# display.fill(0)
+# display.text('SH1107', 0, 0, 1)
+# display.text('driver', 0, 8, 1)
+# display.show()
 #
 # --------------- I2C ------------------
 #
 # reset PIN is not needed in some implementations
 # Pin Map I2C
-#   - 3v - xxxxxx   - Vcc
-#   - G  - xxxxxx   - Gnd
-#   - D2 - GPIO 5   - SCK / SCL
-#   - D1 - GPIO 4   - DIN / SDA
-#   - D0 - GPIO 16  - Res
-#   - G  - xxxxxx     CS
+#   - 3v3 - xxxxxx   - Vcc
+#   - G   - xxxxxx   - Gnd
+#   - D2  - GPIO 5   - SCK / SCL
+#   - D1  - GPIO 4   - DIN / SDA
+#   - D0  - GPIO 16  - Res
+#   - G   - xxxxxx     CS
 #   - G  - xxxxxx     D/C
 #
 # using hardware I2C
@@ -79,14 +94,19 @@ import gc
 _MEMORY_ADDRESSING_MODE = const(0x20)    # 3 Set Memory addressing mode #
                                 # 0x20 horizontal addressing mode #
                                 # 0x21 vertical addressing
-_SET_CONTRAST           = const(0x81) # 4 Set Contrast Control  #
-_SET_SEGMENT_REMAP      = const(0xa0) # 5. Set Segment Re-map: (A0H - A1H)
-_SET_NORMAL_INVERSE     = const(0xa6) # 8. Set Normal/Reverse Display: (A6H -A7H)
-_SET_DISPLAY            = const(0xae) # 11. Display OFF/ON: (AEH - AFH)
-_SET_SCAN_DIRECTION     = const(0xc0) # 13. Set Common Output Scan Direction: (C0H - C8H)
-_LOW_COLUMN_ADDRESS     = const(0x00) # 1. Set Column Address 4 lower bits (POR = 00H) 
-_HIGH_COLUMN_ADDRESS    = const(0x10) # 2. Set Column Address 4 higher bits (POR = 10H)  
-_SET_PAGE_ADDRESS       = const(0xB0) # 12. Set Page Address (using 4 low bits)
+_SET_CONTRAST            = const(0x8100) # 4 Set Contrast Control (double byte command) #
+_SET_SEGMENT_REMAP       = const(0xa0) # 5. Set Segment Re-map: (A0H - A1H)
+_SET_NORMAL_INVERSE      = const(0xa6) # 8. Set Normal/Reverse Display: (A6H -A7H)
+_SET_DISPLAY             = const(0xae) # 11. Display OFF/ON: (AEH - AFH)
+_SET_SCAN_DIRECTION      = const(0xc0) # 13. Set Common Output Scan Direction: (C0H - C8H)
+_LOW_COLUMN_ADDRESS      = const(0x00) # 1. Set Column Address 4 lower bits (POR = 00H) 
+_HIGH_COLUMN_ADDRESS     = const(0x10) # 2. Set Column Address 4 higher bits (POR = 10H)  
+_SET_PAGE_ADDRESS        = const(0xB0) # 12. Set Page Address (using 4 low bits)
+_SET_DISPLAY_OFFSET      = const(0xD300) # 9. Set Display Offset: (Double Bytes Command)
+                                         # second byte may need amending for some displays
+                                         # eg 128x64, some require 0xDC60
+_SET_DISPLAY_START_LINE  = const(0xDC00) # 17. Set Display Start Line (double byte command)
+_SET_MULTIPLEX_RATION    = const(0xA87F) # 6. Set Multiplex Ration: (Double Bytes Command) 
 
 
 # class SH1107(framebuf.FrameBuffer):
@@ -150,10 +170,11 @@ class SH1107(framebuf.FrameBuffer):
                                        #    0xA5 forcibly turn the display on  
         self.write_command(b'\xa8')    # 6. multiplex ratio 
         self.write_command(b'\x7f')    #    duty = 1/64 [3f]  or 128 [7f]
-#        self.write_command(b'\xd3')    # 9. set display offset 
-#        self.write_command(b'\x00')    #    0 is default (POR) display offset value
+        self.write_command( (_SET_DISPLAY_OFFSET).to_bytes(2,'big') )  # 9. offset may need changing for some displays
         self.contrast(0)               # set display to low contrast
         self.poweron()
+        
+        self.write_command((_SET_PAGE_ADDRESS).to_bytes(1,'big')) # set page address to zero
         # rotate90 requires a call to flip() for setting up.
 #         self.flip(self.flip_en, update=False)
 #        print('pre flip call: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
@@ -166,36 +187,36 @@ class SH1107(framebuf.FrameBuffer):
 
     def poweron(self):
         self.write_command(b'\xAF')
+        time.sleep_ms(100) # recommended delay in power up sequence
 
     def flip(self, flag=None, update=True):
         if flag is None:
             flag = not self.flip_en
         mirror_v = flag ^ self.rotate90
         mirror_h =  flag #if self.rotate90 else not flag
-        self.write_command( (_SET_SEGMENT_REMAP   | (0x01 if mirror_v else 0x00)).to_bytes(1,'little') )
-        self.write_command( (_SET_SCAN_DIRECTION  | (0x08 if mirror_h else 0x00)).to_bytes(1,'little') )
-        self.write_command( (_MEMORY_ADDRESSING_MODE | (0x01 if self.rotate90 else 0x00) ).to_bytes(1,'little') )
+        self.write_command( (_SET_SEGMENT_REMAP   | (0x01 if mirror_v else 0x00)).to_bytes(1,'big') )
+        self.write_command( (_SET_SCAN_DIRECTION  | (0x08 if mirror_h else 0x00)).to_bytes(1,'big') )
+        self.write_command( (_MEMORY_ADDRESSING_MODE | (0x01 if self.rotate90 else 0x00) ).to_bytes(1,'big') )
             
         self.flip_en = flag
         if update:
             self.show(True) # full update
 
     def sleep(self, value):
-        self.write_command( (_SET_DISPLAY | (not value)).to_bytes(1,'little') )
+        self.write_command( (_SET_DISPLAY | (not value)).to_bytes(1,'big') )
 
-    def contrast(self, contrast):
-        # contrast can be between 0 (low), 0x80 (POR) and 0xff (high)
-        # the segment current increases with higher values
+    def set_start_line(self, value):
+        # 17. Set Display Start Line:（Double Bytes Command）
+        # valid values are 0 (Power on /Reset) to 127 (x00-x7F)
+        self.write_command( (_SET_DISPLAY_START_LINE | (value & 0x7F)).to_bytes(2,'big') )
         
-        _commandbuffer2=bytearray(2)
-        _commandbuffer2[0] = _SET_CONTRAST
-        _commandbuffer2[1] = contrast
-#        print(_commandbuffer2)
-        self.write_command(_commandbuffer2)
-#         self.write_command( ((_SET_CONTRAST << 8) | contrast ).to_bytes(2,'big') )
+    def contrast(self, contrast):
+        # 4. contrast can be between 0 (low), 0x80 (POR) and 0xff (high)
+        # the segment current increases with higher values
+        self.write_command( (_SET_CONTRAST | (contrast & 0xFF)).to_bytes(2,'big') )
 
     def invert(self, invert):
-        self.write_command( (_SET_NORMAL_INVERSE | (invert & 1)).to_bytes(1,'little')  )
+        self.write_command( (_SET_NORMAL_INVERSE | (invert & 1)).to_bytes(1,'big')  )
         
     def show(self, full_update = False):
         _start = time.ticks_us() 
@@ -210,7 +231,7 @@ class SH1107(framebuf.FrameBuffer):
             pages_to_update = (1 << p) - 1
         else:
             pages_to_update = self.pages_to_update
-#         print("Updating pages: {:016b}".format(pages_to_update), pages_to_update)
+#        print("Updating pages : {:016b}".format(pages_to_update), " to top (decimal: ", pages_to_update, ")")
             
         if self.rotate90:
 #             rb=self.renderbuf
@@ -361,52 +382,48 @@ class SH1107_I2C(SH1107):
 
     def reset(self):
         super().reset(self.res)
-    
-#     print (dir()) 
 
-# NOTE SPI interface is BROKEN
-#
-# class SH1107_SPI(SH1107):
-#     def __init__(self, width, height, spi, dc, res=None, cs=None,
-#                  rotate=0, external_vcc=False):
-#         self.rate = 10 * 1000 * 1000
-#         dc.init(dc.OUT, value=0)
-#         if res is not None:
-#             res.init(res.OUT, value=0)
-#         if cs is not None:
-#             cs.init(cs.OUT, value=1)
-#         self.spi = spi
-#         self.dc = dc
-#         self.res = res
-#         self.cs = cs
-#         super().__init__(width, height, external_vcc, rotate)
-# 
-#     def write_command(self, cmd):
-#         self.spi.init(baudrate=self.rate, polarity=0, phase=0)
-#         if self.cs is not None:
-#             self.cs(1)
-#             self.dc(0)
-#             self.cs(0)
-#             self.spi.write(bytearray([cmd]))
-#             self.cs(1)
-#         else:
-#             self.dc(0)
-#             self.spi.write(bytearray([cmd]))
-# 
-#     def write_data(self, buf):
-#         self.spi.init(baudrate=self.rate, polarity=0, phase=0)
-#         if self.cs is not None:
-#             self.cs(1)
-#             self.dc(1)
-#             self.cs(0)
-#             self.spi.write(buf)
-#             self.cs(1)
-#         else:
-#             self.dc(1)
-#             self.spi.write(buf)
-# 
-#     def reset(self):
-#         super().reset(self.res)
+class SH1107_SPI(SH1107):
+    def __init__(self, width, height, spi, dc, res=None, cs=None,
+                 rotate=0, external_vcc=False):
+        self.rate = 10 * 1000 * 1000
+        dc.init(dc.OUT, value=0)
+        if res is not None:
+            res.init(res.OUT, value=0)
+        if cs is not None:
+            cs.init(cs.OUT, value=1)
+        self.spi = spi
+        self.dc = dc
+        self.res = res
+        self.cs = cs
+        super().__init__(width, height, external_vcc, rotate)
+
+    def write_command(self, cmd):
+        self.spi.init(baudrate=self.rate, polarity=0, phase=0)
+        if self.cs is not None:
+            self.cs(1)
+            self.dc(0)
+            self.cs(0)
+            self.spi.write(cmd)
+            self.cs(1)
+        else:
+            self.dc(0)
+            self.spi.write(cmd)
+
+    def write_data(self, buf):
+        self.spi.init(baudrate=self.rate, polarity=0, phase=0)
+        if self.cs is not None:
+            self.cs(1)
+            self.dc(1)
+            self.cs(0)
+            self.spi.write(buf)
+            self.cs(1)
+        else:
+            self.dc(1)
+            self.spi.write(buf)
+
+    def reset(self):
+        super().reset(self.res)
 
 
 
