@@ -8,7 +8,7 @@ This module provides a MicroPython driver for the SH1107 display controller. It 
 
 ## Version
 
-This is a production version (v210).
+This is a production version (v216).
 
 ## Usage
 
@@ -38,11 +38,19 @@ It has been tested with a Raspberry Pi Pico two 128x128 displays, as follows:
 - [Adafruit 1.12 inch OLED](https://www.adafruit.com/product/5297 "Adafruit 1.12 inch OLED") (I2C interface) (at 3.3 volts)
 - [Pimoroni 1.12 inch OLED](https://shop.pimoroni.com/products/1-12-oled-breakout?variant=12628508704851 "Pimoroni 1.12 inch OLED") (SPI version) (works best with 5V supply)
 
+Changes to some constants will be needed for 128x64 displays. See annotations in the code.
+
 ## Requirements
 
 This code has been tested with MicroPython version 1.18.
 
 ## Release notes
+
+#### Version 216
+
+Changes include:
+- code tidied up
+- annotations added for register values that would need changing for 128x64 displays
 
 #### Version 210
 
