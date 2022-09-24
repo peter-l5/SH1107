@@ -34,7 +34,7 @@ All the methods of MicroPython FrameBuffer in the [framebuf](https://docs.microp
 
 The code includes both I2C and SPI interfaces. 
 
-It has been tested with a Raspberry Pi Pico two 128x128 displays, as follows:
+It has been tested with a Raspberry Pi Pico and two 128x128 displays, as follows:
 - [Adafruit 1.12 inch OLED](https://www.adafruit.com/product/5297 "Adafruit 1.12 inch OLED") (I2C interface) (at 3.3 volts)
 - [Pimoroni 1.12 inch OLED](https://shop.pimoroni.com/products/1-12-oled-breakout?variant=12628508704851 "Pimoroni 1.12 inch OLED") (SPI version) (works best with 5V supply)
 
