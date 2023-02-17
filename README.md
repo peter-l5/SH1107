@@ -12,7 +12,7 @@ This is a production version (v216).
 
 ## Usage
 
-The sh1107.py module code and framebuf2.py module code should be uploaded to the Raspberry Pico Pi (or other Microcontroller running MicroPython. Example use:
+The sh1107.py module code should be uploaded to the Raspberry Pico Pi (or other Microcontroller running MicroPython. If the large font extension is required the framebuf2.py module code should also be uploaded. (See [framebuf2](https://github.com/peter-l5/framebuf2).) Example use for I2C:
 ```
     from machine import Pin, I2C
     import sh1107
@@ -25,10 +25,11 @@ The sh1107.py module code and framebuf2.py module code should be uploaded to the
     display.text('driver', 0, 8, 1)
     display.show()
 ```
+Example usage code for SPI is also provided in the repository.
 
 ## Features
 
-All the methods of MicroPython FrameBuffer in the [framebuf](https://docs.micropython.org/en/v1.18/library/framebuf.html "MicroPython v1.18 documentation") module are accessible as at MicroPython v1.18. The `polygon` method and other changes included in version 1.19.1 are not yet implemented. 
+All the methods of MicroPython FrameBuffer in the [framebuf](https://docs.micropython.org/en/v1.19.1/library/framebuf.html "MicroPython v1.19.1 documentation") module are accessible as at MicroPython v1.19.1. 
 
 ## Interfaces and tested displays 
 
@@ -42,7 +43,7 @@ Changes to some constants will be needed for 128x64 displays. See annotations in
 
 ## Requirements
 
-This code has been tested with MicroPython version 1.18.
+This code has been tested with MicroPython versions 1.18 and 1.19.1.
 
 ## Release notes
 
