@@ -96,6 +96,6 @@ Changes include:
 
 Changes include:
 - added `set_start_line()` method which implements scrolling in one direction (whether x or y depends on display orientation)
-- added `_SET_DISPLAY_OFFSET` constant and included display offset command in start-up sequence. The offset value may need editing for displays smalled than 128x128
+- added `_SET_DISPLAY_OFFSET` constant and included display offset command in start-up sequence. The offset value may need editing for displays smaller than 128x128
 - added 100ms sleep after power on command. This is recommended in the SH1107 datasheet and should reduce the risk of EIO interface errors
 - added page address = 0 command to start up sequence. This improves reliability of start-up
