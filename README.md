@@ -6,7 +6,7 @@ This module provides a MicroPython driver for the SH1107 display controller. It 
 
 This driver offers **screen rotation**: the screen can be initialised at 0, 90, 180 or 270 degrees rotation. The rotation can be changed by 180 degrees after initialisation, but not by 90 degrees clock-wise or anti-clockwise. This is because 90 and 270 degrees use a different framebuffer mode and screen updating method which are set on initialisation. In these orientations the screen updates are a bit slower.
 
-The driver also builds in the facility to use the **`large_text()`** method in the MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/framebuf2)
+The driver builds in the facility to use the **`large_text()`** method in the MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/framebuf2). Moreover, some limited **hardware scrolling** functionality can be used with the `display_start_line()` method.
 
 With an I2C connection at 400,000 bps the display will achieve xx frames per second when orientated at 0 or 180 degrees and yy frames per second at 90 or 270 degrees. Partial updates for example for 1 row of text take from zz milliseconds (tested values using a Raspberry Pi pico at standard clock speed). 
 
