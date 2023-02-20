@@ -4,18 +4,15 @@ This module provides a MicroPython driver for the SH1107 display controller. It 
 
 ## Features
 
-All the methods of MicroPython FrameBuffer in the [framebuf](https://docs.micropython.org/en/v1.19.1/library/framebuf.html "MicroPython v1.19.1 documentation") module are accessible as at MicroPython v1.19.1. 
+This driver offers **screen rotation**: the screen can be initialised at 0, 90, 180 or 270 degrees rotation. The rotation can be changed by 180 degrees after initialisation, but not by 90 degrees clock-wise or anti-clockwise. This is because 90 and 270 degrees use a different framebuffer mode and screen updating method which are set on initialisation. In these orientations the screen updates are a bit slower.
 
-It offers some extensions and improvements including:
-- a link to the `large_text` method in the MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/framebuf2)
-- optimised screen updating when the screen is rotated at 90 or 270 degrees
-- some slight speed improvements
+The driver also builds in the facility to use the **`large_text()`** method in the MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/framebuf2)
+
+With an I2C connection at 400,000 bps the display will achieve xx frames per second when orientated at 0 or 180 degrees and yy frames per second at 90 or 270 degrees. Partial updates for example for 1 row of text take from zz milliseconds (tested values using a Raspberry Pi pico at standard clock speed). 
 
 ## Usage
 
-The sh1107.py module code should be uploaded to the Raspberry Pico Pi (or other Microcontroller running MicroPython). 
-
-If the large font extension is required the `framebuf2.py` module code should also be uploaded. (See [framebuf2](https://github.com/peter-l5/framebuf2).) 
+The sh1107.py module code should be uploaded to the Raspberry Pico Pi (or other Microcontroller running MicroPython). If the large font extension is required the `framebuf2.py` module code should also be uploaded. (See [framebuf2](https://github.com/peter-l5/framebuf2).) 
 
 ### Classes
 
@@ -25,23 +22,15 @@ The module includes the classes `SH1107`, `SH1107_I2C` and `SH1107_SPI`.
 
 ### Methods and Properties
 
-The following methods and properties are available for controlling the display.
-
-- `poweron()`
-
-- `poweroff()` - the display memory is retained in this state, power consumption is reduced to a few uA (tbc). 
-
-- `show(full_update=False)` - this method updates the display from the framebuffer. It has some optimisation to to update only areas of the screen with changes. To force a complete update of the screen, set the optional `full_update` parameter to `True`.  
-
-- `sleep(value)` - `sleep(0)` calls `poweron()`, `sleep(1)` calls `poweroff()`
-
-- `flip(flag=None, update=True)` - rotates the display by 180 degrees. if no value is provided for `flag` the screen is rotated by 180 degrees from its current orientation, otherwise if the `flag` parameter is set to `True`, the screen rotation is set to 180 degrees.
-
-- `display_start_line()`
-
-- `contrast()` - this command effectively sets the screen brightness. power consumption increases as the screen contrast is increased. valid values are in the range 0 to 255. the SH1107 default power on value is 128, however this module initialises the display with the contrast set to zero.
-
-- `invert(invert)` - this method inverts the display to black on white, instead of black on white. the parameter `invert` takes the values `True` or `False`.
+The following methods and properties are available for controlling the display.<br>
+**`poweron()`**<br>
+`poweroff()` - the display memory is retained in this state, power consumption is reduced to a few uA (tbc).<br>
+`show(full_update=False)` - this method updates the display from the framebuffer. It has some optimisation to to update only areas of the screen with changes. To force a complete update of the screen, set the optional `full_update` parameter to `True`. <br>
+`sleep(value)` - `sleep(0)` calls `poweron()`, `sleep(1)` calls `poweroff()`<br>
+`flip(flag=None, update=True)` - rotates the display by 180 degrees. if no value is provided for `flag` the screen is rotated by 180 degrees from its current orientation, otherwise if the `flag` parameter is set to `True`, the screen rotation is set to 180 degrees.<br>
+`display_start_line()`<br>
+`contrast()` - this command effectively sets the screen brightness. power consumption increases as the screen contrast is increased. valid values are in the range 0 to 255. the SH1107 default power on value is 128, however this module initialises the display with the contrast set to zero.<br>
+`invert(invert)` - this method inverts the display to black on white, instead of black on white. the parameter `invert` takes the values `True` or `False`.<br>
 
 ### Example (I2C)
 ```
