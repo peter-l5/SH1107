@@ -26,7 +26,7 @@ The following methods and properties are available for controlling the display.<
 **`poweron()`**<br>
 **`poweroff()`** - the display memory is retained in this state, power consumption is reduced to a few uA (tbc).<br>
 **`sleep(value)`** - `sleep(0)` calls `poweron()`, `sleep(1)` calls `poweroff()`<br>
-**`is_awake()`** this property returns the sleep (False) / wake (True) status of the display.<br>  
+**`is_awake()`** this property returns the sleep (False) / wake (True) status of the display.<br>
 **`show(full_update=False)`** - this method updates the display from the framebuffer. It has some optimisation to to update only areas of the screen with changes. To force a complete update of the screen, set the optional `full_update` parameter to `True`. <br>
 **`contrast()`** - this command effectively sets the screen brightness. power consumption increases as the screen contrast is increased. valid values are in the range 0 to 255. the SH1107 default power on value is 128, however this module initialises the display with the contrast set to zero.<br>
 **`invert(invert)`** - this method inverts the display to black on white, instead of black on white. the parameter `invert` takes the values `True` or `False`.<br>
