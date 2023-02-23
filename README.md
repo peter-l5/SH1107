@@ -26,6 +26,7 @@ The following methods and properties are available for controlling the display.<
 **`poweron()`**<br>
 **`poweroff()`** - the display memory is retained in this state, power consumption is reduced to a few uA (tbc).<br>
 **`sleep(value)`** - `sleep(0)` calls `poweron()`, `sleep(1)` calls `poweroff()`<br>
+**`is_awake()`** this property returns the sleep (False) / wake (True) status of the display.<br>  
 **`show(full_update=False)`** - this method updates the display from the framebuffer. It has some optimisation to to update only areas of the screen with changes. To force a complete update of the screen, set the optional `full_update` parameter to `True`. <br>
 **`contrast()`** - this command effectively sets the screen brightness. power consumption increases as the screen contrast is increased. valid values are in the range 0 to 255. the SH1107 default power on value is 128, however this module initialises the display with the contrast set to zero.<br>
 **`invert(invert)`** - this method inverts the display to black on white, instead of black on white. the parameter `invert` takes the values `True` or `False`.<br>
@@ -65,15 +66,13 @@ This code has been tested with MicroPython versions 1.18 and 1.19.1.
 
 ## Release notes
 
-#### known issues
-- the SPI interface reinitialises in `SH1107_SPI.write_command()` and `SH1107_SPI.write_data()`
-- the `blit()` method fails with negative co-ordinates
-- the MicroPython framebuffer module may deprecate its `fill_rect()` method in a future release. this driver's `rect()` method will need updating
+#### Release v1.1.0 (build 305)
 
-#### potential enhancements
-- introduce a property for sleep (read-only: asleep), and perhaps invert (dark_mode?), flip, and contrast
-- marginal performance improvements
-- test with a 128x64 OLED display and add the necessary changes to the display initialisation (including the display offset parameter). 
+Changes include:
+- `is_awake` property added
+- fixed an issue where the negative co-ordinates for framebuffer methods could trip an error 
+- fixed an issue where the SPI interface would re-initialise in `SH1107_SPI.write_command()` and `SH1107_SPI.write_data()`
+- amended the `fill_rect()` method for compatibility with the "latest" MicroPython release
 
 #### Release v1.0.0 (build 216)
 
