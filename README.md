@@ -1,6 +1,6 @@
 # MicroPython SH1107 display driver - with large fonts
 
-This module provides a MicroPython driver for OLED displays with the SH1107 controller IC. It is mainly based on the [SH1106 driver](https://github.com/robert-hh/SH1106) made by @robert-hh and others. It supports 128x128 pixel displays with both I2C and SPI interfaces. It may need some parameters amending for 128x64 displays (see the [supported displays](##Supported) section below). 
+This module provides a MicroPython driver for OLED displays with the SH1107 controller IC. It is mainly based on the [SH1106 driver](https://github.com/robert-hh/SH1106) made by @robert-hh and others. It supports 128x128 pixel displays with both I2C and SPI interfaces. It may need some parameters amending for 128x64 displays (see the [supported displays](#Supported) section below). 
 
 ## Features
 
