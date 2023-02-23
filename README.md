@@ -1,6 +1,6 @@
 # MicroPython SH1107 display driver - with large fonts
 
-This module provides a MicroPython driver for OLED displays with the SH1107 controller IC. It is mainly based on the [SH1106 driver](https://github.com/robert-hh/SH1106) made by @robert-hh and others. It supports 128x128 pixel displays with both I2C and SPI interfaces. It may need some parameters amending for 128x64 displays (see the [supported displays](#"Supported displays") section below). 
+This module provides a MicroPython driver for OLED displays with the SH1107 controller IC. It is mainly based on the [SH1106 driver](https://github.com/robert-hh/SH1106) made by @robert-hh and others. The driver supports 128x128 pixel displays with I2C or SPI interfaces. It may need some parameters amending for 128x64 displays. (See: [supported displays](#supported-displays).) 
 
 ## Features
 
@@ -12,7 +12,7 @@ With an I2C connection at 400,000 bps a 128x128 display will achieve about 16 fr
 
 ## Usage
 
-The sh1107.py module code should be uploaded to the Raspberry Pico Pi (or other Microcontroller running MicroPython). If the large font extension is required the `framebuf2.py` module code should also be uploaded. (See [framebuf2](https://github.com/peter-l5/framebuf2).) 
+The [sh1107.py module code](/sh1107.py) should be uploaded to the Raspberry Pico Pi (or other Microcontroller running MicroPython). If the large font extension is required the `framebuf2.py` module code should also be uploaded. (See [framebuf2](https://github.com/peter-l5/framebuf2).) 
 
 ### Classes
 
@@ -26,7 +26,6 @@ The following methods and properties are available for controlling the display.<
 **`poweron()`**<br>
 **`poweroff()`** - the display memory is retained in this state, power consumption is reduced to a few uA (tbc).<br>
 **`sleep(value)`** - `sleep(0)` calls `poweron()`, `sleep(1)` calls `poweroff()`<br>
-**`is_awake()`** this property returns the sleep (False) / wake (True) status of the display.<br>
 **`show(full_update=False)`** - this method updates the display from the framebuffer. It has some optimisation to to update only areas of the screen with changes. To force a complete update of the screen, set the optional `full_update` parameter to `True`. <br>
 **`contrast()`** - this command effectively sets the screen brightness. power consumption increases as the screen contrast is increased. valid values are in the range 0 to 255. the SH1107 default power on value is 128, however this module initialises the display with the contrast set to zero.<br>
 **`invert(invert)`** - this method inverts the display to black on white, instead of black on white. the parameter `invert` takes the values `True` or `False`.<br>
@@ -66,13 +65,15 @@ This code has been tested with MicroPython versions 1.18 and 1.19.1.
 
 ## Release notes
 
-#### Release v1.1.0 (build 305)
+#### known issues
+- the SPI interface reinitialises in `SH1107_SPI.write_command()` and `SH1107_SPI.write_data()`
+- the `blit()` method fails with negative co-ordinates
+- the MicroPython framebuffer module may deprecate its `fill_rect()` method in a future release. this driver's `rect()` method will need updating
 
-Changes include:
-- `is_awake` property added
-- fixed an issue where the negative co-ordinates for framebuffer methods could trip an error 
-- fixed an issue where the SPI interface would re-initialise in `SH1107_SPI.write_command()` and `SH1107_SPI.write_data()`
-- amended the `fill_rect()` method for compatibility with the "latest" MicroPython release
+#### potential enhancements
+- introduce a property for sleep (read-only: asleep), and perhaps invert (dark_mode?), flip, and contrast
+- marginal performance improvements
+- test with a 128x64 OLED display and add the necessary changes to the display initialisation (including the display offset parameter). 
 
 #### Release v1.0.0 (build 216)
 
