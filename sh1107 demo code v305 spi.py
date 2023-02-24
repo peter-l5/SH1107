@@ -14,7 +14,7 @@ import framebuf
 
 
 # basic test code SPI
-spi1 = SPI(1, baudrate=10_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
+spi1 = SPI(1, baudrate=40_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
 display = sh1107.SH1107_SPI(128, 128, spi1, Pin(21), Pin(20), Pin(13))
 display.sleep(False)
 display.fill(0)
@@ -26,16 +26,18 @@ display.show()
 # full test code
 print('version ',sys.implementation)
 print('Initial free: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
-spi1 = SPI(1, baudrate=10_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
+spi1 = SPI(1, baudrate=40_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
 print('SPI created: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
-display = sh1107.SH1107_SPI(128, 128, spi1, Pin(21), Pin(20), Pin(13), rotate=270)
+display = sh1107.SH1107_SPI(128, 128, spi1, Pin(21), Pin(20), Pin(13), rotate=90)
 print('display created: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
 
 
 ## common I2C and SPI test code below ##
 
+
 #display.sleep(False)
 display.fill(1)
+display.show()
 display.show()
 time.sleep(1)
 display.fill(0)
@@ -177,12 +179,53 @@ try:
 except:
     pass
 
-for i in range(21):
-    display.sleep( i & 1 )
-
 time.sleep(1)
 
+for i in range(64):
+    display.rect(i, i, 128-i*2, 128-i*2, c = i % 2)
+    display.show()
+#     time.sleep_ms(10)
+time.sleep(1)
 display.fill(0)
+display.show()
+
+for i in range(64):
+    display.rect(i, i, 128-i*2, 128-i*2, c = i % 2, f=False)
+#    display.sleep(i % 2)  
+    display.show()
+    
+time.sleep(1)
+display.fill(0)
+display.show()
+
+for i in range(64):
+    display.rect(i, i, 128-i*2, 128-i*2, c = i % 2, f=True)
+#    display.sleep(i % 2)
+    display.show()
+
+time.sleep(1)
+display.fill(0)
+display.show()
+
+for i in range(64):
+    display.fill_rect(i, i, 128-i*2, 128-i*2, c = i % 2)
+#    display.sleep(i % 2)
+    display.show()
+    
+for i in range(64):
+    display.sleep(i % 2)
+
+time.sleep(2)
+display.fill(0)
+display.show()
+display.show()
+display.show()
+display.show()
+display.show()
+display.show()
+display.show()
+display.show()
+display.show()
 display.show()
 display.poweroff()
 

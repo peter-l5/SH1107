@@ -26,7 +26,8 @@ import framebuf
 # full test code
 print('version ',sys.implementation)
 print('Initial free: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
-i2c0 = I2C(0, scl=Pin(5), sda=Pin(4), freq=400000)
+i2c0 = I2C(0, scl=Pin(5), sda=Pin(4), freq=1000000)
+print(i2c0.scan())
 print('I2C created: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
 display = sh1107.SH1107_I2C(128, 128, i2c0, address=0x3d, rotate=0)
 # display = sh1107.SH1107_I2C(128, 128, i2c0, Pin(16), address=0x3d, rotate=0)
@@ -35,8 +36,10 @@ print('display created: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
 
 ## common I2C and SPI test code below ##
 
+
 #display.sleep(False)
 display.fill(1)
+display.show()
 display.show()
 time.sleep(1)
 display.fill(0)
@@ -178,12 +181,53 @@ try:
 except:
     pass
 
-for i in range(21):
-    display.sleep( i & 1 )
-
 time.sleep(1)
 
+for i in range(64):
+    display.rect(i, i, 128-i*2, 128-i*2, c = i % 2)
+    display.show()
+#     time.sleep_ms(10)
+time.sleep(1)
 display.fill(0)
+display.show()
+
+for i in range(64):
+    display.rect(i, i, 128-i*2, 128-i*2, c = i % 2, f=False)
+#    display.sleep(i % 2)  
+    display.show()
+    
+time.sleep(1)
+display.fill(0)
+display.show()
+
+for i in range(64):
+    display.rect(i, i, 128-i*2, 128-i*2, c = i % 2, f=True)
+#    display.sleep(i % 2)
+    display.show()
+
+time.sleep(1)
+display.fill(0)
+display.show()
+
+for i in range(64):
+    display.fill_rect(i, i, 128-i*2, 128-i*2, c = i % 2)
+#    display.sleep(i % 2)
+    display.show()
+    
+for i in range(64):
+    display.sleep(i % 2)
+
+time.sleep(2)
+display.fill(0)
+display.show()
+display.show()
+display.show()
+display.show()
+display.show()
+display.show()
+display.show()
+display.show()
+display.show()
 display.show()
 display.poweroff()
 
