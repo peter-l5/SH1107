@@ -1,14 +1,14 @@
 #
 # MicroPython SH1107 OLED driver, I2C interfaces
 # tested with Raspberry Pi Pico and adafruit 1.12 inch QWIC OLED display
-# sh1107 driver v216
+# sh1107 driver v306
 #
 # The MIT License (MIT)
 #
 # Copyright (c) 2016 Radomir Dopieralski (@deshipu),
 #               2017-2021 Robert Hammelrath (@robert-hh)
 #               2021 Tim Weber (@scy)
-#               2022 Peter Lumb (peter-l5)
+#               2022-2023 Peter Lumb (peter-l5)
 #
 # Permission is hereby granted, free of charge, to any person obtaining a copy
 # of this software and associated documentation files (the "Software"), to deal
@@ -66,13 +66,15 @@
 # import sh1107
 # 
 # i2c0 = I2C(0, scl=Pin(5), sda=Pin(4), freq=400000)
-# display = sh1107.SH1107_I2C(128, 128, i2c0, Pin(16), address=0x3d, rotate=90)
+# display = sh1107.SH1107_I2C(128, 128, i2c0, address=0x3d, rotate=90)
 # display.sleep(False)
 # display.fill(0)
 # display.text('SH1107', 0, 0, 1)
 # display.text('driver', 0, 8, 1)
 # display.show()
 
+__version__ = "v306"
+__repo__ = "https://github.com/peter-l5/SH1107"
 
 ## SH1107 module code
 from micropython import const
@@ -85,8 +87,17 @@ except:
     import framebuf
     _fb_variant = 1
 print('framebuf is ', ('standard' if _fb_variant ==1 else 'extended') )
-# print('framebuf module dir: ' , dir(framebuf) )
-# import gc
+
+#define timed_function decorator
+def timed_function(f, *args, **kwargs):
+    myname = str(f).split(' ')[1]
+    def new_func(*args, **kwargs):
+        t = time.ticks_us()
+        result = f(*args, **kwargs)
+        delta = time.ticks_diff(time.ticks_us(), t)
+        print('Function {} Time = {:7.3f}ms'.format(myname, delta/1000))
+        return result
+    return new_func
 
 # a few register definitions with SH1107 data sheet reference numbers
 _LOW_COLUMN_ADDRESS      = const(0x00)   # 1. Set Column Address 4 lower bits (POR = 00H) 
@@ -100,7 +111,8 @@ _SET_MULTIPLEX_RATIO     = const(0xA87F) # 6. Set Multiplex Ratio: (Double Bytes
 _SET_NORMAL_INVERSE      = const(0xa6)   # 8. Set Normal/Reverse Display: (A6H -A7H)
 _SET_DISPLAY_OFFSET      = const(0xD300) # 9. Set Display Offset: (Double Bytes Command)
                                          #    second byte may need amending for some displays
-                                         #    eg 128x64 may require 0xDC60
+                                         #    some 128x64 displays (eg Adafruit feather wing 4650)
+                                         #    require 0xD360
 _SET_DC_DC_CONVERTER_SF  = const(0xad8d) # 10. Set DC-DC Setting (set charge pump enable)
                                          #     Set DC-DC enable (a=0:disable; a=1:enable)
                                          #     0xad81 is POR value and may be needed for 128x64 displays 
@@ -112,21 +124,21 @@ _SET_DISPLAY_START_LINE  = const(0xDC00) # 17. Set Display Start Line (double by
 
 
 class SH1107(framebuf.FrameBuffer):
-    white = const(1)
-    black = const(0)
 
     def __init__(self, width, height, external_vcc, rotate=0):
         self.width = width
         self.height = height
         self.external_vcc = external_vcc
-        self.flip_en = rotate == 180 or rotate == 90
+        self.flip_flag = rotate == 180 or rotate == 90
         self.rotate90 = rotate == 90 or rotate == 270
+        self.inverse = False
         self.pages = self.height // 8
-        self.row_width = self.width //8
+        self.row_width = self.width // 8
         self.bufsize = self.pages * self.width
         self.renderbuf = bytearray(self.bufsize)
+        self.renderbuf_mv = memoryview(self.renderbuf)
         self.pages_to_update = 0
-
+        self._is_awake = False
         if self.rotate90:
             # HMSB is required to keep the bit order in the render buffer
             # compatible with byte-for-byte remapping to the display's memory,
@@ -136,13 +148,12 @@ class SH1107(framebuf.FrameBuffer):
         else:
             super().__init__(self.renderbuf, self.width, self.height,
                              framebuf.MONO_VLSB)
-
         self.init_display()
 
     def init_display(self):
         self.reset()
         self.poweroff()  #turn off OLED display
-        self.fill(self.black)
+        self.fill(0)
         self.write_command( _SET_DC_DC_CONVERTER_SF.to_bytes(2,'big') )
         self.write_command( _SET_MULTIPLEX_RATIO.to_bytes(2,'big') ) 
         self.write_command( _SET_DISPLAY_OFFSET.to_bytes(2,'big') )
@@ -151,30 +162,36 @@ class SH1107(framebuf.FrameBuffer):
         self.contrast(0) # set display to low contrast
         self.invert(0)   # normal (not inverse) display
         # requires a call to flip() for setting up.
-        self.flip(self.flip_en)
+        self.flip(self.flip_flag)
         self.poweron()
 
     def poweron(self):
         self.write_command(_SET_DISPLAY_ON.to_bytes(1,'big'))
+        self._is_awake = True
         time.sleep_ms(100) # SH1107 recommended delay in power on sequence
         
     def poweroff(self):
         self.write_command(_SET_DISPLAY_OFF.to_bytes(1,'big'))
+        self._is_awake = False
 
     def sleep(self, value):
-        if value == 0:
+        if value == True:
             self.poweron()
         else:
             self.poweroff()
+    
+    @property
+    def is_awake() -> bool:
+        return self._is_awake
 
     def flip(self, flag=None, update=True):
         if flag is None:
-            flag = not self.flip_en
+            flag = not self.flip_flag
         mirror_v = flag ^ self.rotate90
         mirror_h =  flag 
         self.write_command( (_SET_SEGMENT_REMAP   | (0x01 if mirror_v else 0x00) ).to_bytes(1,'big') )
         self.write_command( (_SET_SCAN_DIRECTION  | (0x08 if mirror_h else 0x00) ).to_bytes(1,'big') )
-        self.flip_en = flag
+        self.flip_flag = flag
         if update:
             self.show(True) # full update
 
@@ -188,52 +205,50 @@ class SH1107(framebuf.FrameBuffer):
         # the segment current increases with higher values
         self.write_command( (_SET_CONTRAST | (contrast & 0xFF)).to_bytes(2,'big') )
 
-    def invert(self, invert):
+    def invert(self, invert=None):
+        if invert == None:
+            invert = not self.inverse
         self.write_command( (_SET_NORMAL_INVERSE | (invert & 1)).to_bytes(1,'big')  )
-        
-    def show(self, full_update = False):
-#         _start = time.ticks_us()
-        (w, p) = (self.width, self.pages)
-        rb_mv = memoryview(self.renderbuf)
-        
-        _commandbuffer=bytearray(3)
-        _commandbuffer2=bytearray(2)
-        _current_page = 1
-                
+        self.inverse = invert
+    
+#     @timed_function
+    def show(self, full_update: bool = False):
+#         _start = time.ticks_us() 
+        (w, p, rb_mv) = (self.width, self.pages, self.renderbuf_mv)
+        commandbuffer = bytearray(3)
+        commandbuffer2 = bytearray(2)
+        current_page = 1
         if full_update:
             pages_to_update = (1 << p) - 1
         else:
             pages_to_update = self.pages_to_update
-#         print("Updating pages : {:016b}".format(pages_to_update), " to top (decimal: ", pages_to_update, ")")
-            
         if self.rotate90:
-            _row_bytes = w // 8
-            for page in range(p):
+            row_bytes = w // 8
+            for start_row in range(0, p*8, 8):
                 # tell display which row
-                if (pages_to_update & _current_page):
+                if (pages_to_update & current_page):
                     # update 8 display rows
-                    for row in range(page*8,(page+1)*8):
+                    for row in range(start_row, start_row + 8):
                         # set row address for update 
                         # sending 2 commands to the display controller in one i2c write
                         # rather than 2 separate writes speeds up the refresh   
-                        _commandbuffer2[0] = row & 0x0f  # low column write address (low col. cmd is 0x00)
-                        _commandbuffer2[1] = _HIGH_COLUMN_ADDRESS + (row >> 4) # high column write address
-                        self.write_command(_commandbuffer2)
+                        commandbuffer2[0] = row & 0x0f  # low column write address (low col. cmd is 0x00)
+                        commandbuffer2[1] = _HIGH_COLUMN_ADDRESS | (row >> 4) # high column write address
+                        self.write_command(commandbuffer2)
                         # take a row of data from the screen framebuffer and write to the display
-                        _slice_start = row * _row_bytes
-                        self.write_data(rb_mv[_slice_start:(_slice_start + _row_bytes)])
-                _current_page <<= 1
+                        slice_start = row * row_bytes
+                        self.write_data(rb_mv[slice_start:(slice_start + row_bytes)])
+                current_page <<= 1
         else:
             for page in range(p):
-                if (pages_to_update & _current_page):
-                    _commandbuffer[0] = _SET_PAGE_ADDRESS | page
-                    _commandbuffer[1] = _LOW_COLUMN_ADDRESS
-                    _commandbuffer[2] = _HIGH_COLUMN_ADDRESS
-                    self.write_command(_commandbuffer)
-                    _page_start = w * page
-                    self.write_data(rb_mv [(_page_start):(_page_start+w)])
-                _current_page <<= 1
-            
+                if (pages_to_update & current_page):
+                    commandbuffer[0] = _SET_PAGE_ADDRESS | page
+                    commandbuffer[1] = _LOW_COLUMN_ADDRESS
+                    commandbuffer[2] = _HIGH_COLUMN_ADDRESS
+                    self.write_command(commandbuffer)
+                    page_start = w * page
+                    self.write_data(rb_mv [(page_start):(page_start+w)])
+                current_page <<= 1
         self.pages_to_update = 0
 #         print('screen update used ', (time.ticks_us()- _start)/1000,'ms')
 
@@ -280,12 +295,27 @@ class SH1107(framebuf.FrameBuffer):
         super().scroll(x, y)
         self.pages_to_update =  (1 << self.pages) - 1
 
+    # rect() and fill_rect() amended to be compatible with new rect() method
+    # from latest micropython as well as 1.19.1 and previous versions
     def fill_rect(self, x, y, w, h, c):
-        super().fill_rect(x, y, w, h, c)
+        try:
+            super().fill_rect(x, y, w, h, c)
+        except:
+            super().rect(x, y, w, h, c, f=True)
         self.register_updates(y, y+h-1)
 
-    def rect(self, x, y, w, h, c):
+    def rect(self, x, y, w, h, c, f=None):
         super().rect(x, y, w, h, c)
+        if f == None:
+            super().rect(x, y, w, h, c)
+        elif f == False:
+            super().rect(x, y, w, h, c)
+        else:
+            try:
+                super().rect(x, y, w, h, c, f)
+            except:
+                super().fill_rect(x, y, w, h, c)
+            
         self.register_updates(y, y+h-1)
 
     def register_updates(self, y0, y1=None):
@@ -298,8 +328,12 @@ class SH1107(framebuf.FrameBuffer):
         # rearrange start_page and end_page if coordinates were given from bottom to top
         if start_page > end_page:
             start_page, end_page = end_page, start_page
-        for page in range(start_page, end_page+1):
-            self.pages_to_update |= 1 << page
+        # ensure that start and end page values for update are non-negative (-ve is off-screen)
+        if end_page >= 0:
+            if start_page < 0:
+                start_page = 0
+            for page in range(start_page, end_page+1):
+                self.pages_to_update |= 1 << page
 
     def reset(self, res):
         if res is not None:
@@ -321,9 +355,11 @@ class SH1107_I2C(SH1107):
             res.init(res.OUT, value=1)
         super().__init__(width, height, external_vcc, rotate)
                         
+#     @timed_function
     def write_command(self, command_list):
         self.i2c.writeto(self.address, b'\x00'+command_list)
         
+#     @timed_function
     def write_data(self, buf):
         self.i2c.writeto(self.address, b'\x40'+buf)
 
@@ -333,7 +369,7 @@ class SH1107_I2C(SH1107):
 class SH1107_SPI(SH1107):
     def __init__(self, width, height, spi, dc, res=None, cs=None,
                  rotate=0, external_vcc=False):
-        self.rate = 10 * 1000 * 1000
+#         self.rate = 10 * 1000 * 1000
         dc.init(dc.OUT, value=0)
         if res is not None:
             res.init(res.OUT, value=0)
@@ -346,7 +382,7 @@ class SH1107_SPI(SH1107):
         super().__init__(width, height, external_vcc, rotate)
 
     def write_command(self, cmd):
-        self.spi.init(baudrate=self.rate, polarity=0, phase=0)
+#         self.spi.init(baudrate=self.rate, polarity=0, phase=0)
         if self.cs is not None:
             self.cs(1)
             self.dc(0)
@@ -358,7 +394,7 @@ class SH1107_SPI(SH1107):
             self.spi.write(cmd)
 
     def write_data(self, buf):
-        self.spi.init(baudrate=self.rate, polarity=0, phase=0)
+#         self.spi.init(baudrate=self.rate, polarity=0, phase=0)
         if self.cs is not None:
             self.cs(1)
             self.dc(1)
