@@ -9,7 +9,7 @@ This driver offers **screen rotation**: the screen can be initialised at 0, 90, 
 The driver builds in the facility to use the **`large_text()`** method in the MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/framebuf2). Moreover, some limited **hardware scrolling** functionality can be used with the `display_start_line()` method.
 
 With an I2C connection at 400,000 bps a 128x128 display will achieve about 16 frames per second when orientated at 0 or 180 degrees and 10 frames per second at 90 or 270 degrees. Partial updates are faster, for example, 1 row of text can be updated in around 5 milliseconds (tested values using a Raspberry Pi pico at standard clock speed). Faster updates can be achieved by running the I2C connection at 1,000,000 bps (although this is faster than the rated speed for the SH1107).<br>
-An SPI connection can achieve full screen updates in around 5ms when orientated at 0 or 180 degrees and about 20ms at 90 or 270 degrees. 
+An SPI connection at 40 MHz can achieve full screen updates in around 5ms when orientated at 0 or 180 degrees and about 20ms at 90 or 270 degrees. 
 
 ## Usage
 
