@@ -174,11 +174,11 @@ class SH1107(framebuf.FrameBuffer):
         self.write_command(_SET_DISPLAY_OFF.to_bytes(1,'big'))
         self._is_awake = False
 
-    def sleep(self, value):
+    def sleep(self, value=True):
         if value == True:
-            self.poweron()
-        else:
             self.poweroff()
+        else:
+            self.poweron()
     
     @property
     def is_awake() -> bool:
@@ -314,8 +314,7 @@ class SH1107(framebuf.FrameBuffer):
             try:
                 super().rect(x, y, w, h, c, f)
             except:
-                super().fill_rect(x, y, w, h, c)
-            
+                super().fill_rect(x, y, w, h, c)   
         self.register_updates(y, y+h-1)
 
     def register_updates(self, y0, y1=None):
