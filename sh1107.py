@@ -1,7 +1,7 @@
 #
 # MicroPython SH1107 OLED driver, I2C interfaces
 # tested with Raspberry Pi Pico and adafruit 1.12 inch QWIC OLED display
-# sh1107 driver v306
+# sh1107 driver v310
 #
 # The MIT License (MIT)
 #
@@ -73,7 +73,7 @@
 # display.text('driver', 0, 8, 1)
 # display.show()
 
-__version__ = "v306"
+__version__ = "v310"
 __repo__ = "https://github.com/peter-l5/SH1107"
 
 ## SH1107 module code
@@ -264,12 +264,6 @@ class SH1107(framebuf.FrameBuffer):
         super().text(text, x, y, c)
         self.register_updates(y, y+7)
 
-    # conditionally define large_text method if framebuf extension loaded 
-    if _fb_variant == 2:
-        def large_text(self, s, x, y, m, c=1):
-            super().large_text(s, x, y, m, c)
-            self.register_updates(y, y+(8*m)-1)
-
     def line(self, x0, y0, x1, y1, c):
         super().line(x0, y0, x1, y1, c)
         self.register_updates(y0, y1)
@@ -305,7 +299,6 @@ class SH1107(framebuf.FrameBuffer):
         self.register_updates(y, y+h-1)
 
     def rect(self, x, y, w, h, c, f=None):
-        super().rect(x, y, w, h, c)
         if f == None:
             super().rect(x, y, w, h, c)
         elif f == False:
@@ -316,6 +309,20 @@ class SH1107(framebuf.FrameBuffer):
             except:
                 super().fill_rect(x, y, w, h, c)   
         self.register_updates(y, y+h-1)
+
+    # conditionally define optimisations for framebuf extension if loaded 
+    if _fb_variant == 2:
+        def large_text(self, s, x, y, m, c=1):
+            super().large_text(s, x, y, m, c)
+            self.register_updates(y, y+(8*m)-1)
+
+        def circle(self, x, y, radius, c, f:bool = None):
+            super().circle(x, y, radius, c, f)
+            self.register_updates(y-radius, y+radius)
+        
+        def triangle(self, x0, y0, x1, y1, x2, y2, c, f:bool = None):
+            super().triangle(x0, y0, x1, y1, x2, y2, c, f)
+            self.register_updates(min(y0, y1, y2), max(y0, y1, y2))
 
     def register_updates(self, y0, y1=None):
         y1=min((y1 if y1 is not None else y0), self.height-1)
@@ -368,7 +375,6 @@ class SH1107_I2C(SH1107):
 class SH1107_SPI(SH1107):
     def __init__(self, width, height, spi, dc, res=None, cs=None,
                  rotate=0, external_vcc=False):
-#         self.rate = 10 * 1000 * 1000
         dc.init(dc.OUT, value=0)
         if res is not None:
             res.init(res.OUT, value=0)
@@ -381,7 +387,6 @@ class SH1107_SPI(SH1107):
         super().__init__(width, height, external_vcc, rotate)
 
     def write_command(self, cmd):
-#         self.spi.init(baudrate=self.rate, polarity=0, phase=0)
         if self.cs is not None:
             self.cs(1)
             self.dc(0)
@@ -393,7 +398,6 @@ class SH1107_SPI(SH1107):
             self.spi.write(cmd)
 
     def write_data(self, buf):
-#         self.spi.init(baudrate=self.rate, polarity=0, phase=0)
         if self.cs is not None:
             self.cs(1)
             self.dc(1)
