@@ -40,7 +40,7 @@ The module includes the class `SH1107` and the derived classes `SH1107_I2C` and 
 display = sh1106.SH1106_I2C(width, height, i2c, res=None, address=0x3d, rotate=0, external_vcc=False)
 ```
 - width and height define the size of the display
-- i2c is an I2C object, which has to be created beforehand and sets the SDA and SCL pins
+- i2c is an I2C object, which has to be created beforehand, and sets the SDA and SCL pins
 - res is the optional GPIO Pin object for the reset connection
 - address is the I2C address of the display. Default value is 0x3d
 - rotate defines display content rotation. See above for details and caveats
@@ -50,7 +50,7 @@ display = sh1106.SH1106_I2C(width, height, i2c, res=None, address=0x3d, rotate=0
 display = sh1106.SH1106_SPI(width, height, spi, dc, res=None, cs=None, rotate=0, external_vcc=False)
 ```
 - width and height define the size of the display
-- spi is an SPI object, which has to be created beforehand and sets the SCL and MOSI pins
+- spi is an SPI object, which has to be created beforehand, and sets the SCL and MOSI pins
 MISO is not used
 - dc is the GPIO Pin object for the Data/Command selection
 - res is the optional GPIO Pin object for the reset connection
@@ -106,6 +106,10 @@ Changes to some constants will be needed for 128x64 displays. See annotations in
 This code has been tested with MicroPython versions 1.18 and 1.19.1.
 
 ## Release notes
+
+#### build 311
+
+- optimisation for the rotation feature of the large_text() method of the framebuf2 module added 
 
 #### build 310
 

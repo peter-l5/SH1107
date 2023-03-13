@@ -1,7 +1,7 @@
 #
 # MicroPython SH1107 OLED driver, I2C interfaces
 # tested with Raspberry Pi Pico and adafruit 1.12 inch QWIC OLED display
-# sh1107 driver v310
+# sh1107 driver v311
 #
 # The MIT License (MIT)
 #
@@ -73,7 +73,7 @@
 # display.text('driver', 0, 8, 1)
 # display.show()
 
-__version__ = "v310"
+__version__ = "v311"
 __repo__ = "https://github.com/peter-l5/SH1107"
 
 ## SH1107 module code
@@ -312,9 +312,13 @@ class SH1107(framebuf.FrameBuffer):
 
     # conditionally define optimisations for framebuf extension if loaded 
     if _fb_variant == 2:
-        def large_text(self, s, x, y, m, c=1):
-            super().large_text(s, x, y, m, c)
-            self.register_updates(y, y+(8*m)-1)
+        def large_text(self, s, x, y, m, c=1, r=0, *args, **kwargs):
+            try:
+                super().large_text(s, x, y, m, c, r, *args, **kwargs)
+            except:
+                raise Exception('extended framebuffer v206 required')
+            h = (8*m) * (1 if r is None or r % 360 // 90 in (0,2) else len(s))
+            self.register_updates(y, y+h-1)
 
         def circle(self, x, y, radius, c, f:bool = None):
             super().circle(x, y, radius, c, f)
@@ -350,7 +354,6 @@ class SH1107(framebuf.FrameBuffer):
             res(1)
             time.sleep_ms(20)  # sleep for 20 milliseconds
 
-
 class SH1107_I2C(SH1107):
     def __init__(self, width, height, i2c, res=None, address=0x3d,
                  rotate=0, external_vcc=False):
@@ -361,11 +364,9 @@ class SH1107_I2C(SH1107):
             res.init(res.OUT, value=1)
         super().__init__(width, height, external_vcc, rotate)
                         
-#     @timed_function
     def write_command(self, command_list):
         self.i2c.writeto(self.address, b'\x00'+command_list)
         
-#     @timed_function
     def write_data(self, buf):
         self.i2c.writeto(self.address, b'\x40'+buf)
 
