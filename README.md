@@ -37,7 +37,13 @@ The module includes the class `SH1107` and the derived classes `SH1107_I2C` and 
 
 ### I2C
 ```
-display = sh1106.SH1106_I2C(width, height, i2c, res=None, address=0x3d, rotate=0, external_vcc=False)
+display = sh1107.SH1107_I2C(width, 
+                            height, 
+                            i2c, 
+                            res=None, 
+                            address=0x3d, 
+                            rotate=0, 
+                            external_vcc=False)
 ```
 - width and height define the size of the display
 - i2c is an I2C object, which has to be created beforehand, and sets the SDA and SCL pins
@@ -47,7 +53,14 @@ display = sh1106.SH1106_I2C(width, height, i2c, res=None, address=0x3d, rotate=0
 
 ### SPI
 ```
-display = sh1106.SH1106_SPI(width, height, spi, dc, res=None, cs=None, rotate=0, external_vcc=False)
+display = sh1107.SH1107_SPI(width, 
+                            height, 
+                            spi, 
+                            dc, 
+                            res=None, 
+                            cs=None, 
+                            rotate=0, 
+                            external_vcc=False)
 ```
 - width and height define the size of the display
 - spi is an SPI object, which has to be created beforehand, and sets the SCL and MOSI pins
