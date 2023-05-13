@@ -1,35 +1,33 @@
 # MicroPython SH1107 display driver - with large text, triangles and circles
 
-This module provides a MicroPython driver for OLED displays with the SH1107 controller IC using either I2C or SPI interfaces. It is mainly based on the [SH1106 driver](https://github.com/robert-hh/SH1106) made by @robert-hh and others. It supports the large text, triangle and circle methods in the MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/framebuf2).
+MicroPython driver for SH1107-based OLED displays with support for I2C and SPI connections. Originally derived from the [SH1106 driver](https://github.com/robert-hh/SH1106) made by @robert-hh and others.
 
-The driver supports 128x128 pixel displays. It is not fully working with 128x64 displays. (See: [supported displays](#supported-displays).) 
+The driver works with 128x128 and 128x64 pixel displays. (For a list of tested displays, see: [tested displays](#tested-displays), below.)
 
-## Features
+The large text, triangle and circle methods in the MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/framebuf2) are supported, as are the ellipse and poly methods provided by MicroPython 1.20.0.
 
-This driver offers **screen rotation**: the screen can be initialised at 0, 90, 180 or 270 degrees rotation. The rotation can be changed by 180 degrees after initialisation, but not by 90 degrees clock-wise or anti-clockwise. This is because 90 and 270 degrees use a different framebuffer mode and screen updating method which are set on initialisation. In these orientations the screen updates are a bit slower.
+Note: from version release v1.3.0 (build v317) which added support for 128x64 displays, the use of the rotate parameter has changed. Thus, for a previous setting of 90 (degrees), 0 should now be used and similarly for 0, 180, and 270, values of 270, 90 and 180 respectively should be used instead.
 
-The driver includes some optimisation for partial screen updates which typically reduce the amount of data written to the screen and increase the speed of updates and display responsiveness. With an I2C connection at 400,000 bps a 128x128 display will achieve about 16 frames per second when orientated at 0 or 180 degrees and 10 frames per second at 90 or 270 degrees. Partial updates are faster, for example, 1 row of text can be updated in around 5 milliseconds (tested values using a Raspberry Pi pico at standard clock speed). Faster updates can be achieved by running the I2C connection at 1,000,000 bps (although this is faster than the rated speed for the SH1107).<br>
-An SPI connection at 40 MHz can achieve full screen updates in around 5ms when orientated at 0 or 180 degrees and about 20ms at 90 or 270 degrees. 
+## Features and performance
+
+This driver offers **screen rotation**: the screen can be initialised at 0, 90, 180 or 270 degrees rotation. The rotation can be changed by 180 degrees after initialisation, but not by 90 degrees clock-wise or anti-clockwise. This is because 90 and 270 degrees use a different framebuffer mode and screen updating method which are set on initialisation.
+
+The driver includes some optimisation for partial screen updates which typically reduce the amount of data written to the screen and increase the speed of updates and display responsiveness. With an I2C connection at 400,000 bps a 128x128 display will achieve about 16 frames per second when orientated at 90 or 270 degrees and 10 frames per second at 0 or 180 degrees. Partial updates are faster, for example, 1 row of text can be updated in around 5 milliseconds (tested values using a Raspberry Pi pico at standard clock speed). Faster updates can be achieved by running the I2C connection at 1,000,000 bps (although this is faster than the rated speed for the SH1107).<br>
+An SPI connection at 40 MHz can achieve full screen updates in around 5ms when orientated at 90 or 270 degrees and about 20ms at 0 or 180 degrees. Updates for 128x64 displays are faster.
 
 The driver builds in the facility to use the **`large_text()`**, **`triangle()`** and **`circle()`** methods in the MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/framebuf2). Moreover, some limited **hardware scrolling** functionality can be used with the `display_start_line()` method.
 
 ## Display connection
 
-The SH1107 has I2C or SPI interfaces. The connection depends on the interface used
-and the number of devices in the system. 
-
 ### I2C
-SCL and SDA have to be connected as minimum. The driver also resets the device by the reset PIN.
-If your are low on GPIO ports, reset can be applied by a dedicated circuit, like the MCP100-300.
+SCL and SDA have to be connected as minimum. The driver can reset the device with the reset PIN (not required for some displays).
 
 ### SPI
-SCLK, MOSI, D/C are always required. If the display is the only SPI device in the set-up,
-CS may be tied to GND. Reset has also to be connected, unless it is driven
-by an external circuit.
+SCLK, MOSI, D/C are always required. If the display is the only SPI device, CS may be tied to GND. Reset has also to be connected, unless it is driven by an external circuit.
 
 ## Usage
 
-The [sh1107.py module code](/sh1107.py) should be uploaded to the Raspberry Pico Pi (or other Microcontroller running MicroPython). If the large font, triangle and circles extension is required the `framebuf2.py` module code should also be uploaded. (See [framebuf2](https://github.com/peter-l5/framebuf2).) 
+The [sh1107.py module code](/sh1107.py) should be uploaded to the Raspberry Pico Pi (or other Microcontroller running MicroPython). The large font, triangle and circles extension is added by additionally uploading the `framebuf2.py` module code. (See [framebuf2](https://github.com/peter-l5/framebuf2).) 
 
 ## Classes
 
@@ -45,11 +43,11 @@ display = sh1107.SH1107_I2C(width,
                             rotate=0, 
                             external_vcc=False)
 ```
-- width and height define the size of the display
+- width (always 128) and height (128 or 64) define the size of the display
 - i2c is an I2C object, which has to be created beforehand, and sets the SDA and SCL pins
 - res is the optional GPIO Pin object for the reset connection
 - address is the I2C address of the display. Default value is 0x3d
-- rotate defines display content rotation. See above for details and caveats
+- rotate defines display content rotation in degrees (can be 0, 90, 180 or 270)
 
 ### SPI
 ```
@@ -62,13 +60,13 @@ display = sh1107.SH1107_SPI(width,
                             rotate=0, 
                             external_vcc=False)
 ```
-- width and height define the size of the display
+- width (always 128) and height (128 or 64) define the size of the display
 - spi is an SPI object, which has to be created beforehand, and sets the SCL and MOSI pins
 MISO is not used
 - dc is the GPIO Pin object for the Data/Command selection
 - res is the optional GPIO Pin object for the reset connection
 - cs is the optional GPIO Pin object for the CS connection
-- rotate defines display content rotation. See above for details and caveat
+- rotate defines display content rotation in degrees (can be 0, 90, 180 or 270)
 
 ## Methods and Properties
 
@@ -85,7 +83,7 @@ The following methods and properties are available for controlling the display<b
 
 ## FrameBuffer methods
 
-The driver works with all [MicroPython FrameBuffer drawing methods](https://docs.micropython.org/en/v1.19.1/library/framebuf.html "MicroPython FrameBuffer v1.19.1") (as at MicroPython 1.19.1). 
+The driver works with all [MicroPython FrameBuffer drawing methods](https://docs.micropython.org/en/v1.20.0/library/framebuf.html "MicroPython FrameBuffer v1.20.0") (as at MicroPython 1.20.0). The syntax of the `fill_rect` method available in versions 1.19.1 and earlier (but not 1.20.0) is also supported.
 
 ### Example (I2C)
 ```
@@ -100,27 +98,33 @@ The driver works with all [MicroPython FrameBuffer drawing methods](https://docs
     display.text('driver', 0, 8, 1)
     display.show()
 ```
-See example code for further details and demo of other methods.
+See example code for further details and usage details for other methods.
 
 ### Example (SPI)
 
-Example usage code for SPI is also provided in the repository.
+Example code for SPI is included in the repository.
 
-## Supported displays 
+## Tested displays 
 
-This driver has been tested with a Raspberry Pi Pico and two 128x128 pixel displays, as follows:
-- [Adafruit 1.12 inch OLED](https://www.adafruit.com/product/5297 "Adafruit 1.12 inch OLED") (I2C interface, no reset Pin needed in I2C mode) (at 3.3 volts)
-- [Pimoroni 1.12 inch OLED](https://shop.pimoroni.com/products/1-12-oled-breakout?variant=12628508704851 "Pimoroni 1.12 inch OLED") (SPI version) (with blocks of pixels lit, this display provides more even brightness with a 5V supply)
-
-Changes to some constants will be needed for 128x64 displays. See annotations in the code.
+This driver has been tested with a Raspberry Pi Pico and the displays listed below. It should work with other 128x128 and 128x64 size displays. (Some 128x64 displays might need different parameters set in the code, depending on their internal connections.)
+- [Adafruit 1.12 inch OLED](https://www.adafruit.com/product/5297 "Adafruit 1.12 inch OLED") (128x128 pixels, tested with I2C interface, no reset Pin needed in I2C mode) (at 3.3 volts)
+- [Pimoroni 1.12 inch OLED](https://shop.pimoroni.com/products/1-12-oled-breakout?variant=12628508704851 "Pimoroni 1.12 inch OLED") (128x128 pixels, SPI version tested) (with blocks of pixels lit, this display was found to provide more even brightness with a 5V rather than 3.3V supply)
+- [Waveshare 1.3 inch OLED Module (C)](https://www.waveshare.com/wiki/1.3inch_OLED_Module_(C) "Waveshare 1.3inch OLED Module (C)") (64x128 pixels, default SPI interface tested)
 
 ## Requirements
 
-This code has been tested with MicroPython versions 1.18 and 1.19.1.
+This code has been tested with MicroPython versions 1.18, 1.19.1 and 1.20.0.
+
+The MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/framebuf2) is recommended for its large text, triangle and circle methods.
 
 ## Release notes
 
-#### build 311
+#### Release v1.3.0 (build 317)
+
+- adds support for 128x64 displays and the ellipse and poly methods in MicroPython 1.20.0
+- usage of the rotate parameter is amended (see above) 
+
+#### Release v1.2.0 (build 311)
 
 - optimisation for the rotation feature of the large_text() method of the framebuf2 module added 
 
@@ -144,6 +148,6 @@ This code has been tested with MicroPython versions 1.18 and 1.19.1.
 #### build 210
 
 - added `set_start_line()` method which implements scrolling in one direction (whether x or y depends on display orientation)
-- added `_SET_DISPLAY_OFFSET` constant and included display offset command in start-up sequence. The offset value may need editing for displays smaller than 128x128
-- added 100ms sleep after power on command. This is recommended in the SH1107 datasheet and should reduce the risk of EIO interface errors
+- added `_SET_DISPLAY_OFFSET` constant and included display offset command in start-up sequence. 
+- added 100ms sleep after power on command in line with diagrams in the SH1107 datasheet
 - added page address = 0 command to start up sequence. This improves reliability of start-up
