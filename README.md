@@ -1,10 +1,10 @@
-# MicroPython SH1107 display driver - with large text, triangles and circles
+# MicroPython SH1107 display driver for 128x128 and 128x64 pixel displays - with large text, triangles and circles
 
-MicroPython driver for SH1107-based OLED displays with support for I2C and SPI connections. Originally derived from the [SH1106 driver](https://github.com/robert-hh/SH1106) made by @robert-hh and others.
+MicroPython driver for SH1107-based OLED displays with support for I2C and SPI connections. This driver works with 128x128 and 128x64 pixel displays. (For a list of tested displays, see: [tested displays](#tested-displays), below.)
 
-The driver works with 128x128 and 128x64 pixel displays. (For a list of tested displays, see: [tested displays](#tested-displays), below.)
+This driver was derived from the [SH1106 driver](https://github.com/robert-hh/SH1106) made by @robert-hh and others. It has been adapted for the SH1107 and incorporates several enhancements.
 
-The large text, triangle and circle methods in the MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/framebuf2) are supported, as are the ellipse and poly methods provided by MicroPython 1.20.0.
+The large text, triangle and circle methods in the MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/framebuf2) are supported, as are the ellipse and poly methods added to the FrameBuffer class in MicroPython version 1.20.0.
 
 Note: from version release v1.3.0 (build v317) which added support for 128x64 displays, the use of the rotate parameter has changed. Thus, for a previous setting of 90 (degrees), 0 should now be used and similarly for 0, 180, and 270, values of 270, 90 and 180 respectively should be used instead.
 
@@ -20,7 +20,7 @@ The driver builds in the facility to use the **`large_text()`**, **`triangle()`*
 ## Display connection
 
 ### I2C
-SCL and SDA have to be connected as minimum. The driver can reset the device with the reset PIN (not required for some displays).
+SCL and SDA have to be connected as minimum. The driver can reset the device with the reset PIN (this is not required for some displays, for example those tested).
 
 ### SPI
 SCLK, MOSI, D/C are always required. If the display is the only SPI device, CS may be tied to GND. Reset has also to be connected, unless it is driven by an external circuit.
@@ -98,7 +98,7 @@ The driver works with all [MicroPython FrameBuffer drawing methods](https://docs
     display.text('driver', 0, 8, 1)
     display.show()
 ```
-See example code for further details and usage details for other methods.
+See example code for further details and usage demonstrations of other methods. 
 
 ### Example (SPI)
 
@@ -106,10 +106,17 @@ Example code for SPI is included in the repository.
 
 ## Tested displays 
 
-This driver has been tested with a Raspberry Pi Pico and the displays listed below. It should work with other 128x128 and 128x64 size displays. (Some 128x64 displays might need different parameters set in the code, depending on their internal connections.)
+This driver has been tested with a Raspberry Pi Pico and the displays listed below. It should work with other 128x128 and 128x64 size displays. (Whilst the code works with the tested displays, other 128x64 displays *might* need changes to some setup/control parameters, depending on how the display panel is connected to the driver IC.)
+
+### 128x128 displays
+
 - [Adafruit 1.12 inch OLED](https://www.adafruit.com/product/5297 "Adafruit 1.12 inch OLED") (128x128 pixels, tested with I2C interface, no reset Pin needed in I2C mode) (at 3.3 volts)
 - [Pimoroni 1.12 inch OLED](https://shop.pimoroni.com/products/1-12-oled-breakout?variant=12628508704851 "Pimoroni 1.12 inch OLED") (128x128 pixels, SPI version tested) (with blocks of pixels lit, this display was found to provide more even brightness with a 5V rather than 3.3V supply)
-- [Waveshare 1.3 inch OLED Module (C)](https://www.waveshare.com/wiki/1.3inch_OLED_Module_(C) "Waveshare 1.3inch OLED Module (C)") (64x128 pixels, default SPI interface tested)
+
+### 128x64 displays
+
+- [Adafruit FeatherWing OLED - 128x64 OLED](https://www.adafruit.com/product/4650 "Adafruit FeatherWing OLED - 128x64 OLED") (I2C interface tested via STEMMA QT/ Qwiic connector)
+- [Waveshare 1.3 inch OLED Module (C)](https://www.waveshare.com/wiki/1.3inch_OLED_Module_(C) "Waveshare 1.3inch OLED Module (C)") (128x64 pixels, default SPI interface tested)
 
 ## Requirements
 
