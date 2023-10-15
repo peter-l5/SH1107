@@ -1,6 +1,6 @@
 # MicroPython SH1107 OLED driver, I2C interfaces
 # tested with Raspberry Pi Pico and adafruit 1.12 inch QWIC OLED display
-# sh1107 driver v317
+# sh1107 driver v318
 #
 # The MIT License (MIT)
 #
@@ -169,7 +169,7 @@ class SH1107(framebuf.FrameBuffer):
             self.poweron()
     
     @property
-    def is_awake() -> bool:
+    def is_awake(self) -> bool:
         return self._is_awake
 
     def flip(self, flag=None, update=True):
