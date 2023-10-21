@@ -134,10 +134,10 @@ The MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/fr
 
 ## Release notes
 
-#### build 319
+#### release v1.3.2 (build 319)
 
 - fixes an error in the is_awake() property
-- parameterizes the start-up delay
+- parameterizes the power on / wake from sleep delay
 - adds additional SH1107 commands to the start-up sequence (all set to defaults)
 - amends the DC-DC converter setting to the SH1107 power on reset default of `0xad81` from `0xad8d`   
 
