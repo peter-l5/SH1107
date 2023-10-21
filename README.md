@@ -41,13 +41,17 @@ display = sh1107.SH1107_I2C(width,
                             res=None, 
                             address=0x3d, 
                             rotate=0, 
-                            external_vcc=False)
+                            external_vcc=False,
+                            delay_ms=200)
 ```
 - width (always 128) and height (128 or 64) define the size of the display
 - i2c is an I2C object, which has to be created beforehand, and sets the SDA and SCL pins
 - res is the optional GPIO Pin object for the reset connection
-- address is the I2C address of the display. Default value is 0x3d
+- address is the I2C address of the display. Default value is 0x3d (or 61 in decimal)
 - rotate defines display content rotation in degrees (can be 0, 90, 180 or 270)
+- delay_ms sets a delay in milliseconds in the display power on sequence and wake from sleep
+  (the SH1107 datasheet suggests a 100ms delay, in practice a 200ms seems more effective
+   in reducing I2C communication errors)
 
 ### SPI
 ```
@@ -58,7 +62,8 @@ display = sh1107.SH1107_SPI(width,
                             res=None, 
                             cs=None, 
                             rotate=0, 
-                            external_vcc=False)
+                            external_vcc=False,
+                            delay_ms=100)
 ```
 - width (always 128) and height (128 or 64) define the size of the display
 - spi is an SPI object, which has to be created beforehand, and sets the SCL and MOSI pins
@@ -67,6 +72,8 @@ MISO is not used
 - res is the optional GPIO Pin object for the reset connection
 - cs is the optional GPIO Pin object for the CS connection
 - rotate defines display content rotation in degrees (can be 0, 90, 180 or 270)
+- delay_ms sets a delay in milliseconds in the display power on sequence and wake from sleep
+  (the SH1107 datasheet suggests a 100ms delay)
 
 ## Methods and Properties
 
@@ -98,11 +105,12 @@ The driver works with all [MicroPython FrameBuffer drawing methods](https://docs
     display.text('driver', 0, 8, 1)
     display.show()
 ```
-See example code for further details and usage demonstrations of other methods. 
+See example code for further details and usage demonstrations of other methods. (The example code was written for 128x128 displays and has only been partially adapted for 64x128 displays.)
 
 ### Example (SPI)
 
-Example code for SPI is included in the repository.
+Example code for SPI is included in the repository. (The code was written for 128x128 displays
+and has only been partially adapted for 64x128 displays.)  
 
 ## Tested displays 
 
@@ -125,6 +133,14 @@ This code has been tested with MicroPython versions 1.18, 1.19.1 and 1.20.0.
 The MicroPython FrameBuffer extension [framebuf2](https://github.com/peter-l5/framebuf2) is recommended for its large text, triangle and circle methods.
 
 ## Release notes
+
+#### build 319
+
+- fixes an error in the is_awake() property
+- parameterizes the start-up delay
+- adds additional SH1107 commands to the start-up sequence (all set to defaults)
+- amends the DC-DC converter setting to the SH1107 power on reset default of `0xad81` from `0xad8d`   
+
 
 #### Release v1.3.0 (build 317)
 
