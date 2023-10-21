@@ -1,6 +1,8 @@
 # MicroPython SH1107 OLED driver, I2C interfaces
 # tested with Raspberry Pi Pico and adafruit 1.12 inch QWIC OLED display
-# sh1107 driver v318
+# sh1107 driver v319
+__version__ = "v319"
+__repo__ = "https://github.com/peter-l5/SH1107"
 #
 # The MIT License (MIT)
 #
@@ -85,7 +87,7 @@ try:
 except:
     import framebuf
     _fb_variant = 1
-print("framebuf is ", ("standard" if _fb_variant ==1 else "extended") )
+print("SH1107: framebuf is ", ("standard" if _fb_variant ==1 else "extended") )
 
 # a few register definitions with SH1107 data sheet reference numbers
 _LOW_COLUMN_ADDRESS      = const(0x00)   # 1. Set Column Address 4 lower bits (POR = 00H) 
@@ -101,22 +103,29 @@ _SET_DISPLAY_OFFSET      = const(0xD300) # 9. Set Display Offset: (Double Bytes 
                                          #    second byte may need amending for some displays
                                          #    some 128x64 displays (eg Adafruit feather wing 4650)
                                          #    require 0xD360
-_SET_DC_DC_CONVERTER_SF  = const(0xad8d) # 10. Set DC-DC Setting (set charge pump enable)
+_SET_DC_DC_CONVERTER_SF  = const(0xad81) # 10. Set DC-DC Setting (set charge pump enable)
                                          #     Set DC-DC enable (a=0:disable; a=1:enable)
                                          #     0xad81 is POR value and may be needed for 128x64 displays 
 _SET_DISPLAY_OFF         = const(0xae)   # 11. Display OFF/ON: (AEH - AFH)
 _SET_DISPLAY_ON          = const(0xaf)   # 11. Display OFF/ON: (AEH - AFH)
 _SET_PAGE_ADDRESS        = const(0xB0)   # 12. Set Page Address (using 4 low bits)
 _SET_SCAN_DIRECTION      = const(0xC0)   # 13. Set Common Output Scan Direction: (C0H - C8H)
+_SET_DISP_CLK_DIV        = const(0xD550) # 14. Set the frequency of the internal display clocks (DCLKs).
+                                         #     0x50 is the POR value
+_SET_DIS_PRECHARGE       = const(0xD922) # 15. Set the duration of the pre-charge period. The interval is counted in number of DCLK
+                                         #     0x22 is default POR value 
+_SET_VCOM_DSEL_LEVEL     = const(0xDB35) # 16. This command is to set the common pad output voltage level at deselect stage.
+                                         #     POR value 0x35 (0.77 * Vref) 
 _SET_DISPLAY_START_LINE  = const(0xDC00) # 17. Set Display Start Line (double byte command)
 
 
 class SH1107(framebuf.FrameBuffer):
 
-    def __init__(self, width, height, external_vcc, rotate=0):
+    def __init__(self, width, height, external_vcc, delay_ms=200, rotate=0):
         self.width = width
         self.height = height
         self.external_vcc = external_vcc
+        self.delay_ms = delay_ms
         self.flip_flag = False 
         self.rotate90 = rotate == 90 or rotate == 270
         self.rotate = rotate
@@ -143,10 +152,13 @@ class SH1107(framebuf.FrameBuffer):
         self.reset()
         self.poweroff()
         self.fill(0)
-        self.write_command(_SET_DC_DC_CONVERTER_SF.to_bytes(2,"big"))
         self.write_command((_SET_MULTIPLEX_RATIO | multiplex_ratio).to_bytes(2,"big"))
         self.write_command((_MEM_ADDRESSING_MODE | (0x00 if self.rotate90 else 0x01)).to_bytes(1,"big"))
-        self.write_command(_SET_PAGE_ADDRESS.to_bytes(1,"big")) # set page address to zero
+        self.write_command(_SET_PAGE_ADDRESS.to_bytes(1,"big")) # set page address to zero        
+        self.write_command(_SET_DC_DC_CONVERTER_SF.to_bytes(2,"big"))
+        self.write_command(_SET_DISP_CLK_DIV.to_bytes(2,"big"))
+        self.write_command(_SET_VCOM_DSEL_LEVEL.to_bytes(2,"big"))
+        self.write_command(_SET_DIS_PRECHARGE.to_bytes(2,"big"))
         self.contrast(0)
         self.invert(0)
         # requires a call to flip() for setting up
@@ -156,7 +168,7 @@ class SH1107(framebuf.FrameBuffer):
     def poweron(self):
         self.write_command(_SET_DISPLAY_ON.to_bytes(1,"big"))
         self._is_awake = True
-        time.sleep_ms(100) # SH1107 recommended delay in power on sequence
+        time.sleep_ms(self.delay_ms) # SH1107 datasheet recommends a delay in power on sequence
         
     def poweroff(self):
         self.write_command(_SET_DISPLAY_OFF.to_bytes(1,"big"))
@@ -354,13 +366,13 @@ class SH1107(framebuf.FrameBuffer):
 
 class SH1107_I2C(SH1107):
     def __init__(self, width, height, i2c, res=None, address=0x3d,
-                 rotate=0, external_vcc=False):
+                 rotate=0, external_vcc=False, delay_ms=200):
         self.i2c = i2c
         self.address = address
         self.res = res
         if res is not None:
             res.init(res.OUT, value=1)
-        super().__init__(width, height, external_vcc, rotate)
+        super().__init__(width, height, external_vcc, delay_ms, rotate)
 
     def write_command(self, command_list):
         self.i2c.writeto(self.address, b"\x00" + command_list)
@@ -373,7 +385,7 @@ class SH1107_I2C(SH1107):
 
 class SH1107_SPI(SH1107):
     def __init__(self, width, height, spi, dc, res=None, cs=None,
-                 rotate=0, external_vcc=False):
+                 rotate=0, external_vcc=False, delay_ms=0):
         dc.init(dc.OUT, value=0)
         if res is not None:
             res.init(res.OUT, value=0)
@@ -383,7 +395,7 @@ class SH1107_SPI(SH1107):
         self.dc = dc
         self.res = res
         self.cs = cs
-        super().__init__(width, height, external_vcc, rotate)
+        super().__init__(width, height, external_vcc, delay_ms, rotate)
 
     def write_command(self, cmd):
         if self.cs is not None:

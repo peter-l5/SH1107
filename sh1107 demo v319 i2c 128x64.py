@@ -1,9 +1,9 @@
-# sh1107 driver demo code v315
+# sh1107 driver demo code v319
 # this code is intended for a 128*128 pixel display
 
 print('starting test')
 
-from machine import Pin, I2C
+from machine import Pin, I2C, SoftI2C
 import sh1107
 print('dir sh1107: ', dir(sh1107))
 import gc
@@ -14,9 +14,12 @@ import array
 
 
 # # basic test code I2C
+# i2c0 = SoftI2C(scl=Pin(5), sda=Pin(4), freq=400000)
 i2c0 = I2C(0, scl=Pin(5), sda=Pin(4), freq=400000)
+print('I2C scan: ',i2c0.scan())
 # display = sh1107.SH1107_I2C(128, 128, i2c0, Pin(16), address=0x3d, rotate=90)
-display = sh1107.SH1107_I2C(128, 128, i2c0, address=0x3d, rotate=0)
+display = sh1107.SH1107_I2C(128, 64, i2c0, address=60, rotate=0)
+#time.sleep(0.5)
 # display.sleep(False)
 display.fill(0)
 display.text('SH1107', 0, 0, 1)
@@ -32,7 +35,7 @@ print('Initial free memory: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc
 i2c0 = I2C(0, scl=Pin(5), sda=Pin(4), freq=400000)
 print('I2C scan: ',i2c0.scan())
 print('I2C created: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
-display = sh1107.SH1107_I2C(128, 128, i2c0, address=0x3d, rotate=270)
+display = sh1107.SH1107_I2C(128, 64, i2c0, address=60, rotate=90)
 # display = sh1107.SH1107_I2C(128, 128, i2c0, Pin(16), address=0x3d, rotate=0)
 print('display created: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
 
@@ -170,6 +173,8 @@ time.sleep_ms(500)
 
 print('free memory' , gc.mem_free())
 
+
+print('invert test')
 display.flip()
 time.sleep(2)
 display.invert(1)

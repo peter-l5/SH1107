@@ -1,4 +1,4 @@
-# sh1107 driver demo code v312b2
+# sh1107 driver demo code v319
 # this code is intended for a 128*128 pixel display
 
 print('starting test')
@@ -11,6 +11,7 @@ import gc
 import sys
 import time #as time
 import framebuf
+import array
 
 
 # basic test code SPI
@@ -29,7 +30,7 @@ print('version ',sys.implementation)
 print('Initial free: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
 spi1 = SPI(1, baudrate=1_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
 print('SPI created: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
-display = sh1107.SH1107_SPI(128, 64, spi1, Pin(21), Pin(20), Pin(13), rotate=0)
+display = sh1107.SH1107_SPI(128, 128, spi1, Pin(21), Pin(20), Pin(13), rotate=0)
 print('display created: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
 
 
@@ -166,6 +167,8 @@ time.sleep_ms(500)
 
 print('free memory' , gc.mem_free())
 
+
+print('invert test')
 display.flip()
 time.sleep(2)
 display.invert(1)
@@ -279,5 +282,19 @@ display.show()
 display.show()
 display.show()
 display.show()
+
+display.ellipse(64, 48, 56, 32, 1)
+display.show()
+time.sleep(1)
+display.ellipse(64, 48, 56, 32, 1, 1, 0xD)
+display.show()
+time.sleep(1)
+coords=array.array('h', [0,0,0,40,40,40 ])
+print(coords)
+display.fill(0)
+display.poly(10,10,coords, 1,1)
+display.show()
+time.sleep(3)
+
 display.poweroff()
 
