@@ -137,11 +137,11 @@ display.blit(letter,0,56)
 display.show(full_update_flag)
 
 print('large text test')
-# try:
-display.large_text('QuiteBIG', 0, 32, 2, 1)
-# except:
-#     display.text('framebuf2', 0, 40 ,1)
-#     display.text('not loaded', 0, 48, 1)
+try:
+    display.large_text('QuiteBIG', 0, 32, 2, 1)
+except:
+    display.text('framebuf2', 0, 40 ,1)
+    display.text('not loaded', 0, 48, 1)
     
 display.show(True)
 # sys.exit(0)
