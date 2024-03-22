@@ -1,5 +1,8 @@
-# sh1107 driver demo code v319
+# sh1107 driver demo code 
 # this code is intended for a 128*128 pixel display
+
+__version__ = "v320a"
+__repo__ = "https://github.com/peter-l5/SH1107"
 
 print('starting test')
 
@@ -13,25 +16,34 @@ import time #as time
 import framebuf
 import array
 
+# time.sleep(5)
 
 # basic test code SPI
-# spi1 = SPI(1, baudrate=1_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
-# display = sh1107.SH1107_SPI(64, 128, spi1, Pin(21), Pin(20), Pin(13))
-# display.sleep(False)flip
-# display.fill(0)
-# display.text('SH1107', 0, 0, 1)
-# display.text('driver', 0, 8, 1)
-# display.show()
-# 
-# time.sleep(2)
+spi0 = SPI(0, baudrate=1_000_000, sck=Pin(18), mosi=Pin(19), miso=Pin(16))
+print(spi0)
+for rotation in range(0, 360, 90):
+    display = sh1107.SH1107_SPI(128, 128, spi0, dc=Pin(21), res=Pin(20), cs=Pin(17), rotate=rotation)
+    print(display)
+    display.sleep(False)
+    display.fill(0)
+    display.text('SH1107', 0, 0, 1)
+    display.text('driver', 0, 8, 1)
+    display.text('r=' + str(rotation), 0, 24, 1)
+    display.show()
+
+    time.sleep(3)
 
 # full test code
 print('version ',sys.implementation)
 print('Initial free: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
-spi1 = SPI(1, baudrate=1_000_000, sck=Pin(14), mosi=Pin(15), miso=Pin(12))
+spi0 = SPI(0, baudrate=1_000_000, sck=Pin(18), mosi=Pin(19), miso=Pin(16))
 print('SPI created: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
-display = sh1107.SH1107_SPI(128, 128, spi1, Pin(21), Pin(20), Pin(13), rotate=0)
+print(spi0)
+display = sh1107.SH1107_SPI(128, 128, spi0, dc=Pin(21), res=Pin(20), cs=Pin(17), rotate=90)
 print('display created: {} allocated: {}'.format(gc.mem_free(), gc.mem_alloc()))
+print(display)
+
+
 
 
 ## common I2C and SPI test code below ##
@@ -273,15 +285,7 @@ for i in range(64):
 time.sleep(2)
 display.fill(0)
 display.show()
-display.show()
-display.show()
-display.show()
-display.show()
-display.show()
-display.show()
-display.show()
-display.show()
-display.show()
+time.sleep(1)
 
 display.ellipse(64, 48, 56, 32, 1)
 display.show()
@@ -289,7 +293,8 @@ time.sleep(1)
 display.ellipse(64, 48, 56, 32, 1, 1, 0xD)
 display.show()
 time.sleep(1)
-coords=array.array('h', [0,0,0,40,40,40 ])
+
+coords=array.array('h', [63,0,87,7,95,31,87,56,63,63,39,56,31,31,39,7,63,0 ])
 print(coords)
 display.fill(0)
 display.poly(10,10,coords, 1,1)

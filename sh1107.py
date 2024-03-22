@@ -1,8 +1,10 @@
 # MicroPython SH1107 OLED driver, I2C interfaces
 # tested with Raspberry Pi Pico and adafruit 1.12 inch QWIC OLED display
-# sh1107 driver v319
-__version__ = "v319"
+# sh1107 driver 
+
+__version__ = "v320a"
 __repo__ = "https://github.com/peter-l5/SH1107"
+
 #
 # The MIT License (MIT)
 #
@@ -74,8 +76,6 @@ __repo__ = "https://github.com/peter-l5/SH1107"
 # display.text('driver', 0, 8, 1)
 # display.show()
 
-__version__ = "v317"
-__repo__ = "https://github.com/peter-l5/SH1107"
 
 ## SH1107 module code
 from micropython import const
@@ -87,36 +87,38 @@ try:
 except:
     import framebuf
     _fb_variant = 1
-print("SH1107: framebuf is ", ("standard" if _fb_variant ==1 else "extended") )
+print("sh1107 module: framebuf is ", ("standard" if _fb_variant ==1 else "extended") )
 
 # a few register definitions with SH1107 data sheet reference numbers
-_LOW_COLUMN_ADDRESS      = const(0x00)   # 1. Set Column Address 4 lower bits (POR = 00H) 
-_HIGH_COLUMN_ADDRESS     = const(0x10)   # 2. Set Column Address 4 higher bits (POR = 10H)  
-_MEM_ADDRESSING_MODE     = const(0x20)   # 3. Set Memory addressing mode
-                                         #    0x20 horizontal addressing; 0x21 vertical addressing
-_SET_CONTRAST            = const(0x8100) # 4. Set Contrast Control (double byte command)
-_SET_SEGMENT_REMAP       = const(0xa0)   # 5. Set Segment Re-map: (A0H - A1H)
-_SET_MULTIPLEX_RATIO     = const(0xA800) # 6. Set Multiplex Ratio: (Double Bytes Command)
-                                         #    duty = 1/64 [3f]  or 128 [7f] (POR)
-_SET_NORMAL_INVERSE      = const(0xa6)   # 8. Set Normal/Reverse Display: (A6H -A7H)
-_SET_DISPLAY_OFFSET      = const(0xD300) # 9. Set Display Offset: (Double Bytes Command)
-                                         #    second byte may need amending for some displays
-                                         #    some 128x64 displays (eg Adafruit feather wing 4650)
-                                         #    require 0xD360
-_SET_DC_DC_CONVERTER_SF  = const(0xad81) # 10. Set DC-DC Setting (set charge pump enable)
-                                         #     Set DC-DC enable (a=0:disable; a=1:enable)
-                                         #     0xad81 is POR value and may be needed for 128x64 displays 
-_SET_DISPLAY_OFF         = const(0xae)   # 11. Display OFF/ON: (AEH - AFH)
-_SET_DISPLAY_ON          = const(0xaf)   # 11. Display OFF/ON: (AEH - AFH)
-_SET_PAGE_ADDRESS        = const(0xB0)   # 12. Set Page Address (using 4 low bits)
-_SET_SCAN_DIRECTION      = const(0xC0)   # 13. Set Common Output Scan Direction: (C0H - C8H)
-_SET_DISP_CLK_DIV        = const(0xD550) # 14. Set the frequency of the internal display clocks (DCLKs).
-                                         #     0x50 is the POR value
-_SET_DIS_PRECHARGE       = const(0xD922) # 15. Set the duration of the pre-charge period. The interval is counted in number of DCLK
-                                         #     0x22 is default POR value 
-_SET_VCOM_DSEL_LEVEL     = const(0xDB35) # 16. This command is to set the common pad output voltage level at deselect stage.
-                                         #     POR value 0x35 (0.77 * Vref) 
-_SET_DISPLAY_START_LINE  = const(0xDC00) # 17. Set Display Start Line (double byte command)
+_LOW_COLUMN_ADDRESS      = const(b"\x00") # 1. Set Column Address 4 lower bits (POR = 00H) 
+_HIGH_COLUMN_ADDRESS     = const(b"\x10") # 2. Set Column Address 4 higher bits (POR = 10H)
+_HIGH_COLUMN_ADDRESS_INT = const(0x10)    # 2. Set Column Address 4 higher bits (POR = 10H)     
+_MEM_ADDRESSING_MODE     = const(0x20)    # 3. Set Memory addressing mode
+                                          #    0x20 horizontal addressing; 0x21 vertical addressing
+_SET_CONTRAST            = const(b"\x81") # 4. Set Contrast Control (double byte command)
+_SET_SEGMENT_REMAP       = const(0xa0)    # 5. Set Segment Re-map: (A0H - A1H)
+_SET_MULTIPLEX_RATIO     = const(0xA800)  # 6. Set Multiplex Ratio: (Double Bytes Command)
+                                          #    duty = 1/64 [3f]  or 128 [7f] (POR)
+_SET_NORMAL_COLOURS      = const(b"\xa6") # 8. Set Normal/Reverse Display: (A6H -A7H)
+_SET_REVERSE_COLOURS     = const(b"\xa7") # 8. Set Normal/Reverse Display: (A6H -A7H)
+_SET_DISPLAY_OFFSET      = const(0xD300)  # 9. Set Display Offset: (Double Bytes Command)
+                                          #    second byte may need amending for some displays
+                                          #    some 128x64 displays (eg Adafruit feather wing 4650)
+                                          #    require 0xD360
+_SET_DC_DC_CONVERTER_SF  = const(0xad81)  # 10. Set DC-DC Setting (set charge pump enable)
+                                          #     Set DC-DC enable (a=0:disable; a=1:enable)
+                                          #     0xad81 is POR value and may be needed for 128x64 displays 
+_SET_DISPLAY_OFF         = const(0xae)    # 11. Display OFF/ON: (AEH - AFH)
+_SET_DISPLAY_ON          = const(0xaf)    # 11. Display OFF/ON: (AEH - AFH)
+_SET_PAGE_ADDRESS        = const(0xB0)    # 12. Set Page Address (using 4 low bits)
+_SET_SCAN_DIRECTION      = const(0xC0)    # 13. Set Common Output Scan Direction: (C0H - C8H)
+_SET_DISP_CLK_DIV        = const(0xD550)  # 14. Set the frequency of the internal display clocks (DCLKs).
+                                          #     0x50 is the POR value
+_SET_DIS_PRECHARGE       = const(0xD922)  # 15. Set the duration of the pre-charge period. The interval is counted in number of DCLK
+                                          #     0x22 is default POR value 
+_SET_VCOM_DSEL_LEVEL     = const(0xDB35)  # 16. This command is to set the common pad output voltage level at deselect stage.
+                                          #     POR value 0x35 (0.77 * Vref) 
+_SET_DISPLAY_START_LINE  = const(0xDC00)  # 17. Set Display Start Line (double byte command)
 
 
 class SH1107(framebuf.FrameBuffer):
@@ -151,7 +153,6 @@ class SH1107(framebuf.FrameBuffer):
         multiplex_ratio = 0x7F if (self.height == 128)  else 0x3F
         self.reset()
         self.poweroff()
-        self.fill(0)
         self.write_command((_SET_MULTIPLEX_RATIO | multiplex_ratio).to_bytes(2,"big"))
         self.write_command((_MEM_ADDRESSING_MODE | (0x00 if self.rotate90 else 0x01)).to_bytes(1,"big"))
         self.write_command(_SET_PAGE_ADDRESS.to_bytes(1,"big")) # set page address to zero        
@@ -159,10 +160,12 @@ class SH1107(framebuf.FrameBuffer):
         self.write_command(_SET_DISP_CLK_DIV.to_bytes(2,"big"))
         self.write_command(_SET_VCOM_DSEL_LEVEL.to_bytes(2,"big"))
         self.write_command(_SET_DIS_PRECHARGE.to_bytes(2,"big"))
-        self.contrast(0)
+        self.contrast(0x2f)
         self.invert(0)
         # requires a call to flip() for setting up
         self.flip(self.flip_flag)
+        self.fill(0)
+        self.show()
         self.poweron()
 
     def poweron(self):
@@ -214,12 +217,13 @@ class SH1107(framebuf.FrameBuffer):
         4. contrast can be between 0 (low), 0x80 (POR) and 0xff (high)
         the segment current increases with higher values
         """
-        self.write_command((_SET_CONTRAST | (contrast & 0xFF)).to_bytes(2,"big"))
+        self.write_command(_SET_CONTRAST + (contrast & 0xFF).to_bytes(1,"big"))
 
     def invert(self, invert=None):
         if invert == None:
             invert = not self.inverse
-        self.write_command((_SET_NORMAL_INVERSE | (invert & 1)).to_bytes(1,"big"))
+#        self.write_command((_SET_NORMAL_INVERSE | (invert & 1)).to_bytes(1,"big"))
+        self.write_command(_SET_REVERSE_COLOURS if invert else _SET_NORMAL_COLOURS) 
         self.inverse = invert
 
     def show(self, full_update: bool = False):
@@ -231,25 +235,23 @@ class SH1107(framebuf.FrameBuffer):
         else:
             pages_to_update = self.pages_to_update
         if self.rotate90:
-            buffer_3Bytes = bytearray(3)
-            buffer_3Bytes[1] = _LOW_COLUMN_ADDRESS
-            buffer_3Bytes[2] = _HIGH_COLUMN_ADDRESS
+            command_buf = bytearray(b"\x00" + _LOW_COLUMN_ADDRESS + _HIGH_COLUMN_ADDRESS)
             for page in range(p):
                 if pages_to_update & current_page:
-                    buffer_3Bytes[0] = _SET_PAGE_ADDRESS | page
-                    self.write_command(buffer_3Bytes)
+                    command_buf[0] = _SET_PAGE_ADDRESS | page
+                    self.write_command(command_buf)
                     page_start = w * page
                     self.write_data(db_mv[page_start : page_start + w])
                 current_page <<= 1
         else:
             row_bytes = w // 8
-            buffer_2Bytes = bytearray(2)
+            command_buf = bytearray(2)
             for start_row in range(0, p * 8, 8):
                 if pages_to_update & current_page:
                     for row in range(start_row, start_row + 8):
-                        buffer_2Bytes[0] = row & 0x0f  # low column (low col. cmd is 0x00)
-                        buffer_2Bytes[1] = _HIGH_COLUMN_ADDRESS | (row >> 4) 
-                        self.write_command(buffer_2Bytes)
+                        command_buf[0] = row & 0x0f  # low column (low col. cmd is 0x00)
+                        command_buf[1] = _HIGH_COLUMN_ADDRESS_INT | (row >> 4) 
+                        self.write_command(command_buf)
                         slice_start = row * row_bytes
                         self.write_data(db_mv[slice_start : slice_start + row_bytes])
                 current_page <<= 1
@@ -398,6 +400,7 @@ class SH1107_SPI(SH1107):
         super().__init__(width, height, external_vcc, delay_ms, rotate)
 
     def write_command(self, cmd):
+#         print("command", cmd)
         if self.cs is not None:
             self.cs(1)
             self.dc(0)
@@ -409,6 +412,7 @@ class SH1107_SPI(SH1107):
             self.spi.write(cmd)
 
     def write_data(self, buf):
+#         print("data", buf )
         if self.cs is not None:
             self.cs(1)
             self.dc(1)
@@ -421,3 +425,5 @@ class SH1107_SPI(SH1107):
 
     def reset(self):
         super().reset(self.res)
+        
+print("sh1107 driver loaded, version: ", __version__)
